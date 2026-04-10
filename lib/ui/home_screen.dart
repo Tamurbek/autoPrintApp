@@ -21,242 +21,244 @@ class HomeScreen extends StatelessWidget {
             width: 350,
             color: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.print_rounded, color: Color(0xFF6366F1), size: 32),
-                    const SizedBox(width: 12),
-                    Text(
-                      l10n.appTitle,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.windowsPosPrinting,
-                  style: TextStyle(color: Colors.white.withOpacity(0.5)),
-                ),
-                const SizedBox(height: 32),
-                
-                // Language Selection
-                Row(
-                  children: [
-                    _langBtn(context, provider, '🇺🇿', 'uz'),
-                    const SizedBox(width: 8),
-                    _langBtn(context, provider, '🇷🇺', 'ru'),
-                    const SizedBox(width: 8),
-                    _langBtn(context, provider, '🇺🇸', 'en'),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                
-                // API URL
-                Text(l10n.apiEndpoint, style: const TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: TextEditingController(text: settings.apiUrl),
-                  onSubmitted: (val) => provider.updateSettings(apiUrl: val),
-                  decoration: const InputDecoration(
-                    hintText: 'https://api.example.com/print-queue',
-                    prefixIcon: Icon(Icons.link_rounded),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Printer Selection
-                Text(l10n.selectPrinter, style: const TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: provider.availablePrinters.any((p) => p.name == settings.selectedPrinter) 
-                          ? settings.selectedPrinter 
-                          : null,
-                      hint: Text(l10n.choosePrinter),
-                      isExpanded: true,
-                      onChanged: (val) => provider.updateSettings(selectedPrinter: val),
-                      items: provider.availablePrinters.map((p) {
-                        return DropdownMenuItem(
-                          value: p.name,
-                          child: Text(p.name),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: provider.testPrint,
-                  icon: const Icon(Icons.playlist_add_check_rounded, size: 18),
-                  label: Text(l10n.testPrint),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF6366F1),
-                    side: const BorderSide(color: Color(0xFF6366F1)),
-                    minimumSize: const Size(double.infinity, 44),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Interval
-                Text('${l10n.pollingInterval}: ${settings.pollingInterval}s', style: const TextStyle(fontWeight: FontWeight.w600)),
-                Slider(
-                  value: settings.pollingInterval.toDouble(),
-                  min: 5,
-                  max: 60,
-                  divisions: 11,
-                  activeColor: const Color(0xFF6366F1),
-                  onChanged: (val) => provider.updateSettings(pollingInterval: val.toInt()),
-                ),
-                
-                const SizedBox(height: 12),
-
-                // Start on Boot Toggle
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          l10n.startAtBoot, 
-                          style: const TextStyle(fontSize: 12),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Transform.scale(
-                        scale: 0.7,
-                        child: Switch(
-                          value: settings.startAtBoot,
-                          onChanged: (val) => provider.updateSettings(startAtBoot: val),
-                          activeColor: const Color(0xFF6366F1),
-                        ),
+                      const Icon(Icons.print_rounded, color: Color(0xFF6366F1), size: 32),
+                      const SizedBox(width: 12),
+                      Text(
+                        l10n.appTitle,
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                ),
-                
-                const Spacer(),
-                
-                // Auto Print Toggle
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: settings.autoPrintEnabled 
-                        ? const Color(0xFF6366F1).withOpacity(0.1)
-                        : Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: settings.autoPrintEnabled 
-                          ? const Color(0xFF6366F1)
-                          : Colors.transparent,
-                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.windowsPosPrinting,
+                    style: TextStyle(color: Colors.white.withOpacity(0.5)),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  const SizedBox(height: 24),
+                  
+                  // Language Selection
+                  Row(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.automaticPrinting, 
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              settings.autoPrintEnabled ? l10n.serviceActive : l10n.servicePaused,
-                              style: TextStyle(
-                                fontSize: 11, 
-                                color: settings.autoPrintEnabled ? const Color(0xFF6366F1) : Colors.white54,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
+                      _langBtn(context, provider, '🇺🇿', 'uz'),
                       const SizedBox(width: 8),
-                      Transform.scale(
-                        scale: 0.8,
-                        child: Switch(
-                          value: settings.autoPrintEnabled,
-                          onChanged: (val) => provider.updateSettings(autoPrintEnabled: val),
-                          activeColor: const Color(0xFF6366F1),
-                        ),
-                      ),
+                      _langBtn(context, provider, '🇷🇺', 'ru'),
+                      const SizedBox(width: 8),
+                      _langBtn(context, provider, '🇺🇸', 'en'),
                     ],
                   ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Update Banner
-                if (provider.updateData != null)
+                  const SizedBox(height: 24),
+                  
+                  // API URL
+                  Text(l10n.apiEndpoint, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: TextEditingController(text: settings.apiUrl),
+                    onSubmitted: (val) => provider.updateSettings(apiUrl: val),
+                    decoration: const InputDecoration(
+                      hintText: 'https://api.example.com/print-queue',
+                      prefixIcon: Icon(Icons.link_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+  
+                  // Printer Selection
+                  Text(l10n.selectPrinter, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: provider.availablePrinters.any((p) => p.name == settings.selectedPrinter) 
+                            ? settings.selectedPrinter 
+                            : null,
+                        hint: Text(l10n.choosePrinter),
+                        isExpanded: true,
+                        onChanged: (val) => provider.updateSettings(selectedPrinter: val),
+                        items: provider.availablePrinters.map((p) {
+                          return DropdownMenuItem(
+                            value: p.name,
+                            child: Text(p.name),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: provider.testPrint,
+                    icon: const Icon(Icons.playlist_add_check_rounded, size: 18),
+                    label: Text(l10n.testPrint),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF6366F1),
+                      side: const BorderSide(color: Color(0xFF6366F1)),
+                      minimumSize: const Size(double.infinity, 44),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+  
+                  // Interval
+                  Text('${l10n.pollingInterval}: ${settings.pollingInterval}s', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Slider(
+                    value: settings.pollingInterval.toDouble(),
+                    min: 5,
+                    max: 60,
+                    divisions: 11,
+                    activeColor: const Color(0xFF6366F1),
+                    onChanged: (val) => provider.updateSettings(pollingInterval: val.toInt()),
+                  ),
+                  
+                  const SizedBox(height: 12),
+  
+                  // Start on Boot Toggle
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.update_rounded, color: Colors.amber, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${l10n.newVersion}: v${provider.updateData!['version']}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        if (provider.isDownloading)
-                          Column(
-                            children: [
-                              LinearProgressIndicator(
-                                value: provider.downloadProgress,
-                                backgroundColor: Colors.white10,
-                                color: Colors.amber,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${(provider.downloadProgress * 100).toInt()}% ${l10n.downloading}',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ],
-                          )
-                        else
-                          ElevatedButton(
-                            onPressed: provider.startUpdate,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber,
-                              foregroundColor: Colors.black,
-                              minimumSize: const Size(double.infinity, 40),
-                            ),
-                            child: Text(l10n.update),
+                        Expanded(
+                          child: Text(
+                            l10n.startAtBoot, 
+                            style: const TextStyle(fontSize: 12),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
+                        const SizedBox(width: 8),
+                        Transform.scale(
+                          scale: 0.7,
+                          child: Switch(
+                            value: settings.startAtBoot,
+                            onChanged: (val) => provider.updateSettings(startAtBoot: val),
+                            activeColor: const Color(0xFF6366F1),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-              ],
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Auto Print Toggle
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: settings.autoPrintEnabled 
+                          ? const Color(0xFF6366F1).withOpacity(0.1)
+                          : Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: settings.autoPrintEnabled 
+                            ? const Color(0xFF6366F1)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.automaticPrinting, 
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                settings.autoPrintEnabled ? l10n.serviceActive : l10n.servicePaused,
+                                style: TextStyle(
+                                  fontSize: 11, 
+                                  color: settings.autoPrintEnabled ? const Color(0xFF6366F1) : Colors.white54,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Transform.scale(
+                          scale: 0.8,
+                          child: Switch(
+                            value: settings.autoPrintEnabled,
+                            onChanged: (val) => provider.updateSettings(autoPrintEnabled: val),
+                            activeColor: const Color(0xFF6366F1),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Update Banner
+                  if (provider.updateData != null)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.update_rounded, color: Colors.amber, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${l10n.newVersion}: v${provider.updateData!['version']}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (provider.isDownloading)
+                            Column(
+                              children: [
+                                LinearProgressIndicator(
+                                  value: provider.downloadProgress,
+                                  backgroundColor: Colors.white10,
+                                  color: Colors.amber,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${(provider.downloadProgress * 100).toInt()}% ${l10n.downloading}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            )
+                          else
+                            ElevatedButton(
+                              onPressed: provider.startUpdate,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber,
+                                foregroundColor: Colors.black,
+                                minimumSize: const Size(double.infinity, 40),
+                              ),
+                              child: Text(l10n.update),
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
 
