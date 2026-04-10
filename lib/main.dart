@@ -30,7 +30,7 @@ class AutoPrintApp extends StatelessWidget {
           surface: const Color(0xFF0F172A), // Slate 900
           background: const Color(0xFF020617), // Slate 950
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: const Color(0xFF1E293B), // Slate 800
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
