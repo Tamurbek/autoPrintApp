@@ -58,4 +58,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get testPrint => 'Пробная печать';
+
+  @override
+  String get checkUpdate => 'Проверить обновления';
+
+  @override
+  String get noUpdate => 'Нет доступных обновлений';
+
+  @override
+  String get updateAvailable => 'Доступно обновление!';
 }

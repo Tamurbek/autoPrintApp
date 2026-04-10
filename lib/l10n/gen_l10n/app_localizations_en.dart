@@ -58,4 +58,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get testPrint => 'Test Print';
+
+  @override
+  String get checkUpdate => 'Check for Updates';
+
+  @override
+  String get noUpdate => 'No update available';
+
+  @override
+  String get updateAvailable => 'Update available!';
 }

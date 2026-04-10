@@ -201,6 +201,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Test Print'**
   String get testPrint;
+
+  /// No description provided for @checkUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for Updates'**
+  String get checkUpdate;
+
+  /// No description provided for @noUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'No update available'**
+  String get noUpdate;
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available!'**
+  String get updateAvailable;
 }
 
 class _AppLocalizationsDelegate

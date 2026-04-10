@@ -15,6 +15,7 @@ import '../models/settings.dart';
 import '../services/print_service.dart';
 import '../services/update_service.dart';
 import '../ui/dialogs/app_update_dialog.dart';
+import '../l10n/gen_l10n/app_localizations.dart';
 import '../main.dart';
 
 class AppProvider extends ChangeNotifier {
@@ -84,6 +85,25 @@ class AppProvider extends ChangeNotifier {
   Future<void> checkForUpdates() async {
     _updateData = await _updateService.checkUpdate();
     notifyListeners();
+  }
+
+  Future<void> manualCheckUpdate() async {
+    final update = await _updateService.checkUpdate();
+    if (update != null) {
+      _updateData = update;
+      notifyListeners();
+      await startUpdate();
+    } else {
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.noUpdate),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> startUpdate() async {

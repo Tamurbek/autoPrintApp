@@ -58,4 +58,13 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get testPrint => 'Test chop etish';
+
+  @override
+  String get checkUpdate => 'Yangilanishni tekshirish';
+
+  @override
+  String get noUpdate => 'Yangilanish mavjud emas';
+
+  @override
+  String get updateAvailable => 'Yangilanish mavjud!';
 }

@@ -15,5 +15,8 @@
   "startAtBoot": "Windows bilan birga yuklanish",
   "choosePrinter": "Printerni tanlang",
   "downloading": "Yuklanmoqda...",
-  "testPrint": "Test chop etish"
+  "testPrint": "Test chop etish",
+  "checkUpdate": "Yangilanishni tekshirish",
+  "noUpdate": "Yangilanish mavjud emas",
+  "updateAvailable": "Yangilanish mavjud!"
 }

@@ -117,6 +117,18 @@ class HomeScreen extends StatelessWidget {
                     activeColor: const Color(0xFF6366F1),
                     onChanged: (val) => provider.updateSettings(pollingInterval: val.toInt()),
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: provider.manualCheckUpdate,
+                    icon: const Icon(Icons.sync_rounded, size: 18),
+                    label: Text(l10n.checkUpdate),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white54,
+                      side: const BorderSide(color: Colors.white10),
+                      minimumSize: const Size(double.infinity, 44),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
                   
                   const SizedBox(height: 12),
   

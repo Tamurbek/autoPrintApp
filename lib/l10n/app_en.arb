@@ -15,5 +15,8 @@
   "startAtBoot": "Start on Windows Boot",
   "choosePrinter": "Choose a printer",
   "downloading": "Downloading...",
-  "testPrint": "Test Print"
+  "testPrint": "Test Print",
+  "checkUpdate": "Check for Updates",
+  "noUpdate": "No update available",
+  "updateAvailable": "Update available!"
 }

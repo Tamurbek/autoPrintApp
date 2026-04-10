@@ -15,5 +15,8 @@
   "startAtBoot": "Запускать при старте Windows",
   "choosePrinter": "Выберите принтер",
   "downloading": "Загрузка...",
-  "testPrint": "Пробная печать"
+  "testPrint": "Пробная печать",
+  "checkUpdate": "Проверить обновления",
+  "noUpdate": "Нет доступных обновлений",
+  "updateAvailable": "Доступно обновление!"
 }
