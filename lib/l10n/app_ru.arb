@@ -1,0 +1,18 @@
+{
+  "appTitle": "AutoPrint Agent",
+  "windowsPosPrinting": "Служба печати POS для Windows",
+  "apiEndpoint": "API Endpoint",
+  "selectPrinter": "Выберите принтер",
+  "pollingInterval": "Интервал опроса",
+  "automaticPrinting": "Автоматическая печать",
+  "serviceActive": "СЛУЖБА АКТИВНА",
+  "servicePaused": "СЛУЖБА ПРИОСТАНОВЛЕНА",
+  "activityLogs": "Журналы активности",
+  "clearLogs": "Очистить логи",
+  "noActivity": "Активности пока нет",
+  "newVersion": "Доступна новая версия",
+  "update": "Обновить",
+  "startAtBoot": "Запускать при старте Windows",
+  "choosePrinter": "Выберите принтер",
+  "downloading": "Загрузка..."
+}

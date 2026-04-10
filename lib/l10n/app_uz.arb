@@ -1,0 +1,18 @@
+{
+  "appTitle": "AutoPrint Agent",
+  "windowsPosPrinting": "Windows POS chop etish xizmati",
+  "apiEndpoint": "API Endpoint",
+  "selectPrinter": "Printerni tanlang",
+  "pollingInterval": "Tekshirish oralig'i",
+  "automaticPrinting": "Avtomatik chop etish",
+  "serviceActive": "XIZMAT FAOL",
+  "servicePaused": "XIZMAT TO'XTATILGAN",
+  "activityLogs": "Amallar jurnali",
+  "clearLogs": "Loglarni tozalash",
+  "noActivity": "Hozircha amallar yo'q",
+  "newVersion": "Yangi versiya mavjud",
+  "update": "Yangilash",
+  "startAtBoot": "Windows bilan birga yuklanish",
+  "choosePrinter": "Printerni tanlang",
+  "downloading": "Yuklanmoqda..."
+}

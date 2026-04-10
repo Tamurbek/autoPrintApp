@@ -5,6 +5,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'providers/app_provider.dart';
 import 'ui/home_screen.dart';
 
@@ -54,12 +56,24 @@ void main() async {
 
 class AutoPrintApp extends StatelessWidget {
   const AutoPrintApp({super.key});
-
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AppProvider>();
     return MaterialApp(
       title: 'AutoPrint POS Agent',
       debugShowCheckedModeBanner: false,
+      locale: Locale(provider.settings.locale),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('uz'),
+        Locale('ru'),
+        Locale('en'),
+      ],
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,

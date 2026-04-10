@@ -1,0 +1,18 @@
+{
+  "appTitle": "AutoPrint Agent",
+  "windowsPosPrinting": "Windows POS Printing Service",
+  "apiEndpoint": "API Endpoint",
+  "selectPrinter": "Select Printer",
+  "pollingInterval": "Polling Interval",
+  "automaticPrinting": "Automatic Printing",
+  "serviceActive": "SERVICE ACTIVE",
+  "servicePaused": "SERVICE PAUSED",
+  "activityLogs": "Activity Logs",
+  "clearLogs": "Clear Logs",
+  "noActivity": "No activity yet",
+  "newVersion": "New Version Available",
+  "update": "Update",
+  "startAtBoot": "Start on Windows Boot",
+  "choosePrinter": "Choose a printer",
+  "downloading": "Downloading..."
+}

@@ -4,6 +4,7 @@ class AppSettings {
   final String? selectedPrinter;
   final bool autoPrintEnabled;
   final bool startAtBoot;
+  final String locale;
   final int pollingInterval; // in seconds
 
   AppSettings({
@@ -11,6 +12,7 @@ class AppSettings {
     this.selectedPrinter,
     this.autoPrintEnabled = false,
     this.startAtBoot = true,
+    this.locale = 'uz',
     this.pollingInterval = 10,
   });
 
@@ -19,6 +21,7 @@ class AppSettings {
     String? selectedPrinter,
     bool? autoPrintEnabled,
     bool? startAtBoot,
+    String? locale,
     int? pollingInterval,
   }) {
     return AppSettings(
@@ -26,6 +29,7 @@ class AppSettings {
       selectedPrinter: selectedPrinter ?? this.selectedPrinter,
       autoPrintEnabled: autoPrintEnabled ?? this.autoPrintEnabled,
       startAtBoot: startAtBoot ?? this.startAtBoot,
+      locale: locale ?? this.locale,
       pollingInterval: pollingInterval ?? this.pollingInterval,
     );
   }

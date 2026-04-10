@@ -65,6 +65,7 @@ class AppProvider extends ChangeNotifier {
       selectedPrinter: prefs.getString('selectedPrinter'),
       autoPrintEnabled: prefs.getBool('autoPrintEnabled') ?? false,
       startAtBoot: prefs.getBool('startAtBoot') ?? true,
+      locale: prefs.getString('locale') ?? 'uz',
       pollingInterval: prefs.getInt('pollingInterval') ?? 10,
     );
     notifyListeners();
@@ -99,6 +100,7 @@ class AppProvider extends ChangeNotifier {
     String? selectedPrinter,
     bool? autoPrintEnabled,
     bool? startAtBoot,
+    String? locale,
     int? pollingInterval,
   }) async {
     _settings = _settings.copyWith(
@@ -106,6 +108,7 @@ class AppProvider extends ChangeNotifier {
       selectedPrinter: selectedPrinter,
       autoPrintEnabled: autoPrintEnabled,
       startAtBoot: startAtBoot,
+      locale: locale,
       pollingInterval: pollingInterval,
     );
 
@@ -117,6 +120,7 @@ class AppProvider extends ChangeNotifier {
       await prefs.setBool('startAtBoot', startAtBoot);
       _updateAutoStart();
     }
+    if (locale != null) await prefs.setString('locale', locale);
     if (pollingInterval != null) await prefs.setInt('pollingInterval', pollingInterval);
 
     if (_settings.autoPrintEnabled) {

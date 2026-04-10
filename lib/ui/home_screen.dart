@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../providers/app_provider.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -10,6 +11,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
     final settings = provider.settings;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: Row(
@@ -22,25 +24,37 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.print_rounded, color: Color(0xFF6366F1), size: 32),
-                    SizedBox(width: 12),
+                    const Icon(Icons.print_rounded, color: Color(0xFF6366F1), size: 32),
+                    const SizedBox(width: 12),
                     Text(
-                      'AutoPrint Agent',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      l10n.appTitle,
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Windows POS Printing Service',
+                  l10n.windowsPosPrinting,
                   style: TextStyle(color: Colors.white.withOpacity(0.5)),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 32),
+                
+                // Language Selection
+                Row(
+                  children: [
+                    _langBtn(context, provider, '🇺🇿', 'uz'),
+                    const SizedBox(width: 8),
+                    _langBtn(context, provider, '🇷🇺', 'ru'),
+                    const SizedBox(width: 8),
+                    _langBtn(context, provider, '🇺🇸', 'en'),
+                  ],
+                ),
+                const SizedBox(height: 32),
                 
                 // API URL
-                const Text('API Endpoint', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(l10n.apiEndpoint, style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: TextEditingController(text: settings.apiUrl),
@@ -53,7 +67,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Printer Selection
-                const Text('Select Printer', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(l10n.selectPrinter, style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -66,7 +80,7 @@ class HomeScreen extends StatelessWidget {
                       value: provider.availablePrinters.any((p) => p.name == settings.selectedPrinter) 
                           ? settings.selectedPrinter 
                           : null,
-                      hint: const Text('Choose a printer'),
+                      hint: Text(l10n.choosePrinter),
                       isExpanded: true,
                       onChanged: (val) => provider.updateSettings(selectedPrinter: val),
                       items: provider.availablePrinters.map((p) {
@@ -81,7 +95,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Interval
-                Text('Polling Interval: ${settings.pollingInterval}s', style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text('${l10n.pollingInterval}: ${settings.pollingInterval}s', style: const TextStyle(fontWeight: FontWeight.w600)),
                 Slider(
                   value: settings.pollingInterval.toDouble(),
                   min: 5,
@@ -103,7 +117,7 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Windows bilan birga ishga tushish', style: TextStyle(fontSize: 13)),
+                      Expanded(child: Text(l10n.startAtBoot, style: const TextStyle(fontSize: 13))),
                       Transform.scale(
                         scale: 0.8,
                         child: Switch(
@@ -138,9 +152,9 @@ class HomeScreen extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Automatic Printing', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(l10n.automaticPrinting, style: const TextStyle(fontWeight: FontWeight.bold)),
                           Text(
-                            settings.autoPrintEnabled ? 'SERVICE ACTIVE' : 'SERVICE PAUSED',
+                            settings.autoPrintEnabled ? l10n.serviceActive : l10n.servicePaused,
                             style: TextStyle(
                               fontSize: 12, 
                               color: settings.autoPrintEnabled ? const Color(0xFF6366F1) : Colors.white54,
@@ -149,7 +163,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                  Switch(
+                      Switch(
                         value: settings.autoPrintEnabled,
                         onChanged: (val) => provider.updateSettings(autoPrintEnabled: val),
                         activeColor: const Color(0xFF6366F1),
@@ -177,7 +191,7 @@ class HomeScreen extends StatelessWidget {
                             const Icon(Icons.update_rounded, color: Colors.amber, size: 20),
                             const SizedBox(width: 8),
                             Text(
-                              'Yangi versiya: v${provider.updateData!['version']}',
+                              '${l10n.newVersion}: v${provider.updateData!['version']}',
                               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber),
                             ),
                           ],
@@ -193,7 +207,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${(provider.downloadProgress * 100).toInt()}% yuklanmoqda...',
+                                '${(provider.downloadProgress * 100).toInt()}% ${l10n.downloading}',
                                 style: const TextStyle(fontSize: 12),
                               ),
                             ],
@@ -206,7 +220,7 @@ class HomeScreen extends StatelessWidget {
                               foregroundColor: Colors.black,
                               minimumSize: const Size(double.infinity, 40),
                             ),
-                            child: const Text('Yangilash'),
+                            child: Text(l10n.update),
                           ),
                       ],
                     ),
@@ -226,14 +240,14 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Activity Logs',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      Text(
+                        l10n.activityLogs,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       TextButton.icon(
                         onPressed: provider.clearLogs,
                         icon: const Icon(Icons.delete_sweep_rounded),
-                        label: const Text('Clear Logs'),
+                        label: Text(l10n.clearLogs),
                         style: TextButton.styleFrom(foregroundColor: Colors.white54),
                       ),
                     ],
@@ -254,7 +268,7 @@ class HomeScreen extends StatelessWidget {
                                   Icon(Icons.history_rounded, size: 64, color: Colors.white.withOpacity(0.1)),
                                   const SizedBox(height: 16),
                                   Text(
-                                    'No activity yet',
+                                    l10n.noActivity,
                                     style: TextStyle(color: Colors.white.withOpacity(0.2)),
                                   ),
                                 ],
@@ -287,6 +301,23 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _langBtn(BuildContext context, AppProvider provider, String flag, String code) {
+    final active = provider.settings.locale == code;
+    return InkWell(
+      onTap: () => provider.updateSettings(locale: code),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFF6366F1).withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: active ? const Color(0xFF6366F1) : Colors.white10),
+        ),
+        child: Text(flag, style: const TextStyle(fontSize: 20)),
       ),
     );
   }
