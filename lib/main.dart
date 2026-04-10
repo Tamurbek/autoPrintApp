@@ -18,8 +18,9 @@ void main() async {
   PackageInfo packageInfo = await PackageInfo.fromPlatform();
   
   // Initialize Launch at Startup
-  LaunchAtStartup.instance.setup(
-    executableName: 'autoprint',
+  launchAtStartup.setup(
+    appName: packageInfo.appName,
+    appPath: Platform.resolvedExecutable,
     packageName: 'com.example.autoprint',
     registrationDirectory: 'Software\\SimpleSale\\AutoPrint',
   );
