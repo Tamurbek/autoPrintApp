@@ -3,7 +3,7 @@
 
 #define MyAppName "AutoPrint Agent"
 #ifndef MyAppVersion
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #endif
 #define MyAppPublisher "Tamurbek"
 #define MyAppURL "https://github.com/Tamurbek/autoPrintApp"
