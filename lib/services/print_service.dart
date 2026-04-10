@@ -1,10 +1,12 @@
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import '../models/settings.dart';
+import 'pdf_generator_service.dart';
 
 class PrintService {
   Timer? _timer;
@@ -21,8 +23,23 @@ class PrintService {
         final response = await http.get(Uri.parse(settings.apiUrl));
         
         if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+          Uint8List printData = response.bodyBytes;
+          
+          // Check if response is JSON
+          final contentType = response.headers['content-type'] ?? '';
+          if (contentType.contains('application/json') || response.body.trim().startsWith('{')) {
+            try {
+              onLog("JSON data received, converting to PDF...");
+              final jsonData = jsonDecode(response.body);
+              printData = await PdfGeneratorService.generateFromJson(jsonData);
+              onLog("JSON converted to PDF successfully.");
+            } catch (e) {
+              onLog("JSON Parse Error: $e. Printing as raw data.");
+            }
+          }
+
           onLog("Document received, printing...");
-          await printDocument(response.bodyBytes, settings.selectedPrinter);
+          await printDocument(printData, settings.selectedPrinter);
           onLog("Print job sent successfully.");
         } else if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
           // No documents to print
