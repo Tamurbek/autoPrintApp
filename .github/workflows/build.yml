@@ -9,10 +9,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-windows:
     name: Windows Build
@@ -28,24 +24,14 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Clean build artifacts
+        run: flutter clean
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build Windows
         run: flutter build windows --release
-
-      - name: Download VC++ Redistributable
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "windows/vc_redist.x64.exe"
-
-      - name: Verify build output
-        shell: pwsh
-        run: |
-          if (-Not (Test-Path "build/windows/x64/runner/Release/autoprint.exe")) {
-            Write-Error "Build output not found!"
-            exit 1
-          }
 
       - name: Get Version from pubspec.yaml
         id: get_version
@@ -54,6 +40,7 @@ jobs:
           $versionLine = Get-Content pubspec.yaml | Select-String "^version: "
           $version = $versionLine.ToString().Split(":")[1].Trim().Split("+")[0]
           echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Found version: $version"
 
       - name: Create Installer (Inno Setup)
         shell: pwsh
@@ -80,7 +67,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: bin-windows/AutoPrint_Setup.exe
+          files: |
+            bin-windows/AutoPrint_Setup.exe
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false

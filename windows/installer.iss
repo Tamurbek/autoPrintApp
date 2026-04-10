@@ -3,31 +3,37 @@
 
 #define MyAppName "AutoPrint Agent"
 #ifndef MyAppVersion
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #endif
-#define MyAppPublisher "SimpleSale"
+#define MyAppPublisher "Tamurbek"
+#define MyAppURL "https://github.com/Tamurbek/autoPrintApp"
 #define MyAppExeName "autoprint.exe"
 
 [Setup]
-; AppId is uniquely identified for this application.
-AppId={{C7E6B22C-4A3C-4C6E-9F1B-4A3D1E2C3D4E}}
+; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
+; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
+AppId={{D3F9A1B2-C8E7-4D6F-9F8E-0A1B2C3D4E5F}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+;AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}
+AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DisableProgramGroupPage=yes
-; Output info
+; Uncomment the following line to run in non administrative install mode (install for current user only.)
+;PrivilegesRequired=lowest
 OutputDir=..\build\windows\x64\runner\Release\installer
 OutputBaseFilename=AutoPrint_Setup
+SetupIconFile=..\windows\runner\resources\app_icon.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-PrivilegesRequired=admin
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -35,14 +41,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "..\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-; Include VC++ redist if needed
-Source: "vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
+; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-; Install VC++ Redistributable silently
-Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/quiet /install /norestart"; Flags: runhidden; StatusMsg: "System libraries are being installed (Visual C++)..."
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

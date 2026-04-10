@@ -42,15 +42,23 @@ class UpdateService {
   }
 
   bool _isNewer(String latest, String current) {
-    List<int> latestParts = latest.split('.').map(int.parse).toList();
-    List<int> currentParts = current.split('.').map(int.parse).toList();
-    
-    for (int i = 0; i < latestParts.length; i++) {
-        if (i >= currentParts.length) return true;
-        if (latestParts[i] > currentParts[i]) return true;
-        if (latestParts[i] < currentParts[i]) return false;
+    try {
+      // Remove build fragments (+1, etc.)
+      String latestClean = latest.split('+')[0];
+      String currentClean = current.split('+')[0];
+
+      List<int> latestParts = latestClean.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+      List<int> currentParts = currentClean.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+      
+      for (int i = 0; i < latestParts.length; i++) {
+          if (i >= currentParts.length) return true;
+          if (latestParts[i] > currentParts[i]) return true;
+          if (latestParts[i] < currentParts[i]) return false;
+      }
+      return false;
+    } catch (e) {
+      return false;
     }
-    return false;
   }
 
   Future<void> downloadAndInstall(String url, Function(double) onProgress) async {

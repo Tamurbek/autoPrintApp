@@ -14,6 +14,8 @@ import 'package:pdf/widgets.dart' as pw;
 import '../models/settings.dart';
 import '../services/print_service.dart';
 import '../services/update_service.dart';
+import '../ui/dialogs/app_update_dialog.dart';
+import '../main.dart';
 
 class AppProvider extends ChangeNotifier {
   AppSettings _settings = AppSettings(apiUrl: "");
@@ -85,17 +87,17 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> startUpdate() async {
-    if (_updateData == null) return;
-    _isDownloading = true;
-    notifyListeners();
-
-    await _updateService.downloadAndInstall(
-      _updateData!['url'],
-      (progress) {
-        _downloadProgress = progress;
-        notifyListeners();
-      },
-    );
+    if (_updateData != null) {
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        AppUpdateDialog.show(
+          context,
+          _updateData!['version'],
+          _updateData!['url'],
+          changelog: _updateData!['changelog'],
+        );
+      }
+    }
   }
 
   Future<void> updateSettings({

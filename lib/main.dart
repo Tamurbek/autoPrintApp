@@ -9,6 +9,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/gen_l10n/app_localizations.dart';
 import 'providers/app_provider.dart';
 import 'ui/home_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,7 +67,8 @@ class AutoPrintApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
     return MaterialApp(
-      title: 'AutoPrint POS Agent',
+      navigatorKey: navigatorKey,
+      title: 'AutoPrint Agent',
       debugShowCheckedModeBanner: false,
       locale: Locale(provider.settings.locale),
       localizationsDelegates: const [
