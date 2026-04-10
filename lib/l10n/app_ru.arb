@@ -16,6 +16,7 @@
   "choosePrinter": "Выберите принтер",
   "downloading": "Загрузка...",
   "testPrint": "Пробная печать",
+  "testJsonPrint": "Тест JSON печати",
   "checkUpdate": "Проверить обновления",
   "noUpdate": "Нет доступных обновлений",
   "updateAvailable": "Доступно обновление!"

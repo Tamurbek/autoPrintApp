@@ -11,17 +11,30 @@ class PdfGeneratorService {
     
     // Attempt to get items or fallback to empty list
     final List<dynamic> items = data['items'] ?? [];
-    final String title = data['title'] ?? data['store_name'] ?? 'Chek';
+    final String title = data['title'] ?? data['store_name'] ?? 'Ro\'yxat';
     final String address = data['address'] ?? '';
     final String date = data['date'] ?? DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
     final String total = data['total']?.toString() ?? '0';
-    final String currency = data['currency'] ?? "so'm";
-    final String footer = data['footer'] ?? "Xaridingiz uchun rahmat!";
+    final String currency = data['currency'] ?? "";
+    final String footer = data['footer'] ?? "Ro'yxat yakunlandi";
+    
+    // Dynamic columns support
+    final List<dynamic> headers = data['headers'] ?? [
+      data['header_name'] ?? 'Nomi',
+      data['header_qty'] ?? 'Soni',
+      data['header_total'] ?? 'Jami'
+    ];
+    
+    final List<dynamic> keys = data['keys'] ?? [
+      'name',
+      'qty',
+      'total'
+    ];
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.roll80,
-        margin: const pw.EdgeInsets.all(10),
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(30), // Increased margin for A4
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -29,65 +42,73 @@ class PdfGeneratorService {
               pw.Center(
                 child: pw.Column(
                   children: [
-                    pw.Text(title, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                    pw.Text(title, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18), textAlign: pw.TextAlign.center),
                     if (address.isNotEmpty) pw.Padding(
-                      padding: const pw.EdgeInsets.only(top: 2),
-                      child: pw.Text(address, style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center),
+                      padding: const pw.EdgeInsets.only(top: 4),
+                      child: pw.Text(address, style: const pw.TextStyle(fontSize: 10), textAlign: pw.TextAlign.center),
                     ),
-                    pw.SizedBox(height: 4),
-                    pw.Text(date, style: const pw.TextStyle(fontSize: 8)),
-                    pw.SizedBox(height: 8),
+                    pw.SizedBox(height: 5),
+                    pw.Text(date, style: const pw.TextStyle(fontSize: 10)),
+                    pw.SizedBox(height: 10),
                     pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
                   ],
                 ),
               ),
-              pw.SizedBox(height: 5),
-              // Header
+              pw.SizedBox(height: 10),
+              // Header Row
               pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Expanded(child: pw.Text('Nomi', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9))),
-                  pw.Container(width: 30, child: pw.Text('Soni', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9))),
-                  pw.Container(width: 50, child: pw.Text('Jami', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9))),
-                ],
+                children: headers.asMap().entries.map((entry) {
+                  final int idx = entry.key;
+                  final String h = entry.value.toString();
+                  return pw.Expanded(
+                    flex: idx == 0 ? 3 : 1, // First column (name) gets even more space
+                    child: pw.Text(
+                      h, 
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
+                      textAlign: idx == 0 ? pw.TextAlign.left : pw.TextAlign.right,
+                    ),
+                  );
+                }).toList(),
               ),
-              pw.SizedBox(height: 2),
-              pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
-              pw.SizedBox(height: 2),
+              pw.SizedBox(height: 4),
+              pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+              pw.SizedBox(height: 6),
               // Items
               ...items.map((item) {
-                final String name = item['name'] ?? item['title'] ?? 'Noma\'lum';
-                final String qty = item['qty']?.toString() ?? item['quantity']?.toString() ?? '1';
-                final String price = item['price']?.toString() ?? '0';
-                final String itemTotal = item['total']?.toString() ?? '';
-
                 return pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 1),
+                  padding: const pw.EdgeInsets.symmetric(vertical: 4),
                   child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Expanded(child: pw.Text(name, style: const pw.TextStyle(fontSize: 9))),
-                      pw.Container(width: 30, child: pw.Text(qty, textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 9))),
-                      pw.Container(width: 50, child: pw.Text(itemTotal.isNotEmpty ? itemTotal : price, textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 9))),
-                    ],
+                    children: keys.asMap().entries.map((entry) {
+                      final int idx = entry.key;
+                      final String k = entry.value.toString();
+                      final String val = item[k]?.toString() ?? '';
+                      return pw.Expanded(
+                        flex: idx == 0 ? 3 : 1,
+                        child: pw.Text(
+                          val, 
+                          style: const pw.TextStyle(fontSize: 11),
+                          textAlign: idx == 0 ? pw.TextAlign.left : pw.TextAlign.right,
+                        ),
+                      );
+                    }).toList(),
                   ),
                 );
               }).toList(),
-              pw.SizedBox(height: 4),
+              pw.SizedBox(height: 10),
               pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
-              pw.SizedBox(height: 4),
+              pw.SizedBox(height: 10),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('JAMI:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
-                  pw.Text('$total $currency', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                  pw.Text('JAMI:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                  pw.Text('$total $currency', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
                 ],
               ),
-              pw.SizedBox(height: 15),
+              pw.Spacer(), // Push footer to bottom
               pw.Center(
-                child: pw.Text(footer, style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 8)),
+                child: pw.Text(footer, style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10)),
               ),
-              pw.SizedBox(height: 10),
+              pw.SizedBox(height: 20),
             ],
           );
         },

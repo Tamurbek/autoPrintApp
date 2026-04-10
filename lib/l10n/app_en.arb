@@ -16,6 +16,7 @@
   "choosePrinter": "Choose a printer",
   "downloading": "Downloading...",
   "testPrint": "Test Print",
+  "testJsonPrint": "Test JSON Print",
   "checkUpdate": "Check for Updates",
   "noUpdate": "No update available",
   "updateAvailable": "Update available!"

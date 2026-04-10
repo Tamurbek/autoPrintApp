@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/gen_l10n/app_localizations.dart';
 import '../providers/app_provider.dart';
+import 'dialogs/pdf_preview_dialog.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -105,6 +106,33 @@ class HomeScreen extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: provider.testJsonPrint,
+                    icon: const Icon(Icons.code_rounded, size: 18),
+                    label: Text(l10n.testJsonPrint),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white24),
+                      minimumSize: const Size(double.infinity, 44),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  if (provider.lastPdfBytes != null) ...[
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => PdfPreviewDialog.show(context, provider.lastPdfBytes!),
+                      icon: const Icon(Icons.visibility_rounded, size: 18),
+                      label: const Text("Hujjatni ko'rish"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                        foregroundColor: const Color(0xFF6366F1),
+                        side: const BorderSide(color: Color(0xFF6366F1)),
+                        minimumSize: const Size(double.infinity, 44),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
   
                   // Interval

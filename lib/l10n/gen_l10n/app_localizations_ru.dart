@@ -60,6 +60,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get testPrint => 'Пробная печать';
 
   @override
+  String get testJsonPrint => 'Тест JSON печати';
+
+  @override
   String get checkUpdate => 'Проверить обновления';
 
   @override

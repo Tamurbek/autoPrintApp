@@ -60,6 +60,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get testPrint => 'Test chop etish';
 
   @override
+  String get testJsonPrint => 'JSON Test chop etish';
+
+  @override
   String get checkUpdate => 'Yangilanishni tekshirish';
 
   @override

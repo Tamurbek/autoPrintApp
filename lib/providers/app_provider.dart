@@ -7,6 +7,7 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -17,6 +18,7 @@ import '../services/update_service.dart';
 import '../ui/dialogs/app_update_dialog.dart';
 import '../l10n/gen_l10n/app_localizations.dart';
 import '../main.dart';
+import '../services/pdf_generator_service.dart';
 
 class AppProvider extends ChangeNotifier {
   AppSettings _settings = AppSettings(apiUrl: "");
@@ -28,6 +30,7 @@ class AppProvider extends ChangeNotifier {
   Map<String, dynamic>? _updateData;
   double _downloadProgress = 0;
   bool _isDownloading = false;
+  Uint8List? _lastPdfBytes;
 
   AppSettings get settings => _settings;
   List<String> get logs => _logs;
@@ -35,6 +38,7 @@ class AppProvider extends ChangeNotifier {
   Map<String, dynamic>? get updateData => _updateData;
   double get downloadProgress => _downloadProgress;
   bool get isDownloading => _isDownloading;
+  Uint8List? get lastPdfBytes => _lastPdfBytes;
 
   AppProvider() {
     _loadSettings();
@@ -166,7 +170,8 @@ class AppProvider extends ChangeNotifier {
         notifyListeners();
       },
       (data) {
-        // Handle generic print success if needed
+        _lastPdfBytes = data;
+        notifyListeners();
       },
     );
   }
@@ -212,6 +217,9 @@ class AppProvider extends ChangeNotifier {
       );
 
       final bytes = await pdf.save();
+      _lastPdfBytes = bytes;
+      notifyListeners();
+      
       final printer = _availablePrinters.firstWhere((p) => p.name == _settings.selectedPrinter);
       await Printing.directPrintPdf(
         printer: printer,
@@ -221,6 +229,52 @@ class AppProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Test print xatosi: $e");
+      notifyListeners();
+    }
+  }
+
+  Future<void> testJsonPrint() async {
+    if (_settings.selectedPrinter == null) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Error: Printer tanlanmagan");
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final sampleJson = {
+        "title": "Talabalar Ro'yxati",
+        "headers": ["F.I.SH.", "Guruh", "Status", "Baho"],
+        "keys": ["name", "qty", "total", "grade"],
+        "items": [
+          {"name": "Aliyev Vali", "qty": "301", "total": "Faol", "grade": "5"},
+          {"name": "Eshmatov Toshmat", "qty": "302", "total": "Nofaol", "grade": "4"},
+          {"name": "Qodirova Laylo", "qty": "301", "total": "Faol", "grade": "5"},
+          {"name": "Jumayev Shaxzod", "qty": "303", "total": "Faol", "grade": "3"},
+          {"name": "Karimov Aziz", "qty": "301", "total": "Nofaol", "grade": "2"},
+          {"name": "Nazarov Sanjar", "qty": "302", "total": "Faol", "grade": "5"},
+          {"name": "Sultonova Madina", "qty": "303", "total": "Faol", "grade": "4"},
+          {"name": "Olimov Sardor", "qty": "301", "total": "Faol", "grade": "5"},
+          {"name": "Tursunov Doston", "qty": "302", "total": "Nofaol", "grade": "3"},
+          {"name": "Ismoilov Islom", "qty": "303", "total": "Faol", "grade": "4"}
+        ],
+        "total": "10",
+        "currency": "nafar talaba",
+        "footer": "Barcha ma'lumotlar saqlandi."
+      };
+
+      final bytes = await PdfGeneratorService.generateFromJson(sampleJson);
+      _lastPdfBytes = bytes;
+      notifyListeners();
+      
+      final printer = _availablePrinters.firstWhere((p) => p.name == _settings.selectedPrinter);
+      await Printing.directPrintPdf(
+        printer: printer,
+        onLayout: (_) => bytes,
+      );
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Test JSON print yuborildi");
+      notifyListeners();
+    } catch (e) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Test JSON print xatosi: $e");
       notifyListeners();
     }
   }

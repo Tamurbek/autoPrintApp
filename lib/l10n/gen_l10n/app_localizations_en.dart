@@ -60,6 +60,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get testPrint => 'Test Print';
 
   @override
+  String get testJsonPrint => 'Test JSON Print';
+
+  @override
   String get checkUpdate => 'Check for Updates';
 
   @override

@@ -202,6 +202,12 @@ abstract class AppLocalizations {
   /// **'Test Print'**
   String get testPrint;
 
+  /// No description provided for @testJsonPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Test JSON Print'**
+  String get testJsonPrint;
+
   /// No description provided for @checkUpdate.
   ///
   /// In en, this message translates to:

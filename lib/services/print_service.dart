@@ -39,6 +39,7 @@ class PrintService {
           }
 
           onLog("Document received, printing...");
+          onPrint(printData); // Send to provider for preview
           await printDocument(printData, settings.selectedPrinter);
           onLog("Print job sent successfully.");
         } else if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
