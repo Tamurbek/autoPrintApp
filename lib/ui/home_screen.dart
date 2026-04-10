@@ -117,9 +117,17 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(child: Text(l10n.startAtBoot, style: const TextStyle(fontSize: 13))),
+                      Expanded(
+                        child: Text(
+                          l10n.startAtBoot, 
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Transform.scale(
-                        scale: 0.8,
+                        scale: 0.7,
                         child: Switch(
                           value: settings.startAtBoot,
                           onChanged: (val) => provider.updateSettings(startAtBoot: val),
@@ -149,24 +157,35 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(l10n.automaticPrinting, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(
-                            settings.autoPrintEnabled ? l10n.serviceActive : l10n.servicePaused,
-                            style: TextStyle(
-                              fontSize: 12, 
-                              color: settings.autoPrintEnabled ? const Color(0xFF6366F1) : Colors.white54,
-                              fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.automaticPrinting, 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                            Text(
+                              settings.autoPrintEnabled ? l10n.serviceActive : l10n.servicePaused,
+                              style: TextStyle(
+                                fontSize: 11, 
+                                color: settings.autoPrintEnabled ? const Color(0xFF6366F1) : Colors.white54,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                      Switch(
-                        value: settings.autoPrintEnabled,
-                        onChanged: (val) => provider.updateSettings(autoPrintEnabled: val),
-                        activeColor: const Color(0xFF6366F1),
+                      const SizedBox(width: 8),
+                      Transform.scale(
+                        scale: 0.8,
+                        child: Switch(
+                          value: settings.autoPrintEnabled,
+                          onChanged: (val) => provider.updateSettings(autoPrintEnabled: val),
+                          activeColor: const Color(0xFF6366F1),
+                        ),
                       ),
                     ],
                   ),
