@@ -40,47 +40,67 @@ class PdfGeneratorService {
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(30),
+        margin: const pw.EdgeInsets.all(35),
+        header: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(bottom: 10),
+          child: pw.Text(
+            'Bet ${context.pageNumber} / ${context.pagesCount}',
+            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey),
+          ),
+        ),
         build: (pw.Context context) {
           return [
-            pw.Center(
-              child: pw.Column(
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text(title, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18), textAlign: pw.TextAlign.center),
-                  if (address.isNotEmpty) pw.Padding(
-                    padding: const pw.EdgeInsets.only(top: 4),
-                    child: pw.Text(address, style: const pw.TextStyle(fontSize: 10), textAlign: pw.TextAlign.center),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(title, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 20)),
+                      if (address.isNotEmpty) pw.Text(address, style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text("Sana: $date", style: const pw.TextStyle(fontSize: 10)),
+                    ],
                   ),
-                  pw.SizedBox(height: 5),
-                  pw.Text(date, style: const pw.TextStyle(fontSize: 10)),
-                  pw.SizedBox(height: 10),
-                  pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                  pw.Container(
+                    width: 60,
+                    height: 60,
+                    child: pw.Placeholder(), // Optional space for logo
+                  ),
                 ],
               ),
             ),
-            pw.SizedBox(height: 10),
-            // Header Row
-            pw.Row(
-              children: headers.asMap().entries.map((entry) {
-                final int idx = entry.key;
-                final String h = entry.value.toString();
-                return pw.Expanded(
-                  flex: idx == 0 ? 3 : 1,
-                  child: pw.Text(
-                    h, 
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
-                    textAlign: idx == 0 ? pw.TextAlign.left : pw.TextAlign.right,
-                  ),
-                );
-              }).toList(),
+            pw.SizedBox(height: 20),
+            // Table Header with Border
+            pw.Container(
+              decoration: const pw.BoxDecoration(
+                border: pw.Border(bottom: pw.BorderSide(width: 1.5)),
+              ),
+              padding: const pw.EdgeInsets.only(bottom: 5),
+              child: pw.Row(
+                children: headers.asMap().entries.map((entry) {
+                  final int idx = entry.key;
+                  final String h = entry.value.toString();
+                  return pw.Expanded(
+                    flex: idx == 0 ? 3 : 1,
+                    child: pw.Text(
+                      h.toUpperCase(), 
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                      textAlign: idx == 0 ? pw.TextAlign.left : pw.TextAlign.right,
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
-            pw.SizedBox(height: 4),
-            pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
-            pw.SizedBox(height: 6),
-            // Items
+            // Items with light borders
             ...items.map((item) {
-              return pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(vertical: 4),
+              return pw.Container(
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(bottom: pw.BorderSide(width: 0.5, color: PdfColors.grey300)),
+                ),
+                padding: const pw.EdgeInsets.symmetric(vertical: 8),
                 child: pw.Row(
                   children: keys.asMap().entries.map((entry) {
                     final int idx = entry.key;
@@ -90,7 +110,7 @@ class PdfGeneratorService {
                       flex: idx == 0 ? 3 : 1,
                       child: pw.Text(
                         val, 
-                        style: const pw.TextStyle(fontSize: 11),
+                        style: const pw.TextStyle(fontSize: 10),
                         textAlign: idx == 0 ? pw.TextAlign.left : pw.TextAlign.right,
                       ),
                     );
@@ -98,22 +118,60 @@ class PdfGeneratorService {
                 ),
               );
             }).toList(),
-            pw.SizedBox(height: 10),
-            pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
-            pw.SizedBox(height: 10),
+            pw.SizedBox(height: 20),
+            // Summary
             pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: pw.MainAxisAlignment.end,
               children: [
-                pw.Text('JAMI:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
-                pw.Text('$total $currency', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text("JAMI: $total $currency", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                    pw.SizedBox(height: 4),
+                    pw.Container(width: 150, height: 1, color: PdfColors.black),
+                  ],
+                ),
               ],
             ),
-            pw.SizedBox(height: 20),
-            pw.Center(
-              child: pw.Text(footer, style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10)),
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(top: 50),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Container(
+                        width: 150, 
+                        decoration: const pw.BoxDecoration(
+                          border: pw.Border(top: pw.BorderSide())
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text("Mas'ul shaxs imzosi", style: const pw.TextStyle(fontSize: 10)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text("M.O'.", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                      pw.SizedBox(height: 4),
+                      pw.Text("(Muhr uchun joy)", style: const pw.TextStyle(fontSize: 8)),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ];
         },
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.center,
+          margin: const pw.EdgeInsets.only(top: 10),
+          child: pw.Text(
+            footer,
+            style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 8, color: PdfColors.grey700),
+          ),
+        ),
       ),
     );
 

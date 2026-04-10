@@ -260,6 +260,7 @@ class AppProvider extends ChangeNotifier {
       return;
     }
 
+    try {
       // Generate a long list of 130 students to fill approx 4 A4 pages
       final items = List.generate(130, (index) => {
         "name": "Talaba ${index + 1} Ism Sharif",
