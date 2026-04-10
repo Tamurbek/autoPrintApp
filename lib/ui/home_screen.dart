@@ -124,7 +124,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Switch(
+                  Switch(
                         value: settings.autoPrintEnabled,
                         onChanged: (val) => provider.updateSettings(autoPrintEnabled: val),
                         activeColor: const Color(0xFF6366F1),
@@ -132,6 +132,60 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                
+                const SizedBox(height: 24),
+                
+                // Update Banner
+                if (provider.updateData != null)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.update_rounded, color: Colors.amber, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Yangi versiya: v${provider.updateData!['version']}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (provider.isDownloading)
+                          Column(
+                            children: [
+                              LinearProgressIndicator(
+                                value: provider.downloadProgress,
+                                backgroundColor: Colors.white10,
+                                color: Colors.amber,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${(provider.downloadProgress * 100).toInt()}% yuklanmoqda...',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          )
+                        else
+                          ElevatedButton(
+                            onPressed: provider.startUpdate,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber,
+                              foregroundColor: Colors.black,
+                              minimumSize: const Size(double.infinity, 40),
+                            ),
+                            child: const Text('Yangilash'),
+                          ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),

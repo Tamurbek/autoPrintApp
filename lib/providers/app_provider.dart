@@ -4,16 +4,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:printing/printing.dart';
 import '../models/settings.dart';
 import '../services/print_service.dart';
+import '../services/update_service.dart';
 
 class AppProvider extends ChangeNotifier {
   AppSettings _settings = AppSettings(apiUrl: "");
   final PrintService _printService = PrintService();
+  final UpdateService _updateService = UpdateService();
   final List<String> _logs = [];
   List<Printer> _availablePrinters = [];
+  
+  Map<String, dynamic>? _updateData;
+  double _downloadProgress = 0;
+  bool _isDownloading = false;
 
   AppSettings get settings => _settings;
   List<String> get logs => _logs;
   List<Printer> get availablePrinters => _availablePrinters;
+  Map<String, dynamic>? get updateData => _updateData;
+  double get downloadProgress => _downloadProgress;
+  bool get isDownloading => _isDownloading;
 
   AppProvider() {
     _loadSettings();
@@ -32,6 +41,26 @@ class AppProvider extends ChangeNotifier {
     if (_settings.autoPrintEnabled) {
       _startService();
     }
+    checkForUpdates();
+  }
+
+  Future<void> checkForUpdates() async {
+    _updateData = await _updateService.checkUpdate();
+    notifyListeners();
+  }
+
+  Future<void> startUpdate() async {
+    if (_updateData == null) return;
+    _isDownloading = true;
+    notifyListeners();
+
+    await _updateService.downloadAndInstall(
+      _updateData!['url'],
+      (progress) {
+        _downloadProgress = progress;
+        notifyListeners();
+      },
+    );
   }
 
   Future<void> updateSettings({
