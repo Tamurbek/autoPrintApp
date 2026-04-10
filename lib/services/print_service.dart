@@ -12,7 +12,7 @@ class PrintService {
   Timer? _timer;
   bool _isPolling = false;
 
-  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List) onPrint) {
+  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?) onPrint) {
     _timer?.cancel();
     _isPolling = true;
     _timer = Timer.periodic(Duration(seconds: settings.pollingInterval), (timer) async {
@@ -24,24 +24,28 @@ class PrintService {
         
         if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
           Uint8List printData = response.bodyBytes;
+          PdfGeneratorResponse? genResponse;
           
           // Check if response is JSON
           final contentType = response.headers['content-type'] ?? '';
           if (contentType.contains('application/json') || response.body.trim().startsWith('{')) {
             try {
-              onLog("JSON data received, converting to PDF...");
+              onLog("JSON ma'lumot keldi, PDF-ga o'tkazilmoqda...");
               final jsonData = jsonDecode(response.body);
-              printData = await PdfGeneratorService.generateFromJson(jsonData);
-              onLog("JSON converted to PDF successfully.");
+              genResponse = await PdfGeneratorService.generateFromJson(jsonData);
+              printData = genResponse.bytes;
+              onLog("Muvaffaqiyatli o'tkazildi: ${genResponse.pageCount} bet.");
             } catch (e) {
-              onLog("JSON Parse Error: $e. Printing as raw data.");
+              onLog("JSON Parse Xatosi: $e. Xom ma'lumot sifatida chop etish...");
             }
           }
 
-          onLog("Document received, printing...");
-          onPrint(printData); // Send to provider for preview
-          await printDocument(printData, settings.selectedPrinter);
-          onLog("Print job sent successfully.");
+          onLog("Hujjat keldi. Tasdiqlash kutilmoqda...");
+          // We can track pageCount if it's from JSON
+          int? pageCount;
+          if (genResponse != null) pageCount = genResponse.pageCount;
+          
+          onPrint(printData, pageCount); 
         } else if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
           // No documents to print
         } else {

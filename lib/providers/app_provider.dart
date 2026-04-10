@@ -16,6 +16,7 @@ import '../models/settings.dart';
 import '../services/print_service.dart';
 import '../services/update_service.dart';
 import '../ui/dialogs/app_update_dialog.dart';
+import '../ui/dialogs/print_confirmation_dialog.dart';
 import '../l10n/gen_l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/pdf_generator_service.dart';
@@ -169,9 +170,22 @@ class AppProvider extends ChangeNotifier {
         if (_logs.length > 100) _logs.removeLast();
         notifyListeners();
       },
-      (data) {
+      (data, pageCount) async {
         _lastPdfBytes = data;
         notifyListeners();
+        
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          final confirmed = await PrintConfirmationDialog.show(context, pageCount);
+          if (confirmed == true) {
+            await _printService.printDocument(data, _settings.selectedPrinter);
+            _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Hujjat chop etildi.");
+            notifyListeners();
+          } else {
+            _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Chop etish bekor qilindi.");
+            notifyListeners();
+          }
+        }
       },
     );
   }
@@ -220,6 +234,12 @@ class AppProvider extends ChangeNotifier {
       _lastPdfBytes = bytes;
       notifyListeners();
       
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        final confirmed = await PrintConfirmationDialog.show(context, 1);
+        if (confirmed != true) return;
+      }
+
       final printer = _availablePrinters.firstWhere((p) => p.name == _settings.selectedPrinter);
       await Printing.directPrintPdf(
         printer: printer,
@@ -262,10 +282,17 @@ class AppProvider extends ChangeNotifier {
         "footer": "Barcha ma'lumotlar saqlandi."
       };
 
-      final bytes = await PdfGeneratorService.generateFromJson(sampleJson);
+      final genResponse = await PdfGeneratorService.generateFromJson(sampleJson);
+      final bytes = genResponse.bytes;
       _lastPdfBytes = bytes;
       notifyListeners();
       
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        final confirmed = await PrintConfirmationDialog.show(context, genResponse.pageCount);
+        if (confirmed != true) return;
+      }
+
       final printer = _availablePrinters.firstWhere((p) => p.name == _settings.selectedPrinter);
       await Printing.directPrintPdf(
         printer: printer,
