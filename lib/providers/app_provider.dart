@@ -2,6 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:printing/printing.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:launch_at_startup/launch_at_startup.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'package:window_manager/window_manager.dart';
+import 'dart:io';
+
 import '../models/settings.dart';
 import '../services/print_service.dart';
 import '../services/update_service.dart';
@@ -27,6 +33,29 @@ class AppProvider extends ChangeNotifier {
   AppProvider() {
     _loadSettings();
     _refreshPrinters();
+    _initTray();
+  }
+
+  Future<void> _initTray() async {
+    if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+      try {
+        await trayManager.setIcon(
+          Platform.isWindows 
+            ? 'windows/runner/resources/app_icon.ico' 
+            : 'assets/icon.png',
+        );
+        Menu menu = Menu(
+          items: [
+            MenuItem(label: 'Open', onClick: (_) => windowManager.show()),
+            MenuItem.separator(),
+            MenuItem(label: 'Exit', onClick: (_) => exit(0)),
+          ],
+        );
+        await trayManager.setContextMenu(menu);
+      } catch (e) {
+        debugPrint('Tray initialization error: $e');
+      }
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -35,9 +64,11 @@ class AppProvider extends ChangeNotifier {
       apiUrl: prefs.getString('apiUrl') ?? "",
       selectedPrinter: prefs.getString('selectedPrinter'),
       autoPrintEnabled: prefs.getBool('autoPrintEnabled') ?? false,
+      startAtBoot: prefs.getBool('startAtBoot') ?? true,
       pollingInterval: prefs.getInt('pollingInterval') ?? 10,
     );
     notifyListeners();
+    _updateAutoStart();
     if (_settings.autoPrintEnabled) {
       _startService();
     }
@@ -67,12 +98,14 @@ class AppProvider extends ChangeNotifier {
     String? apiUrl,
     String? selectedPrinter,
     bool? autoPrintEnabled,
+    bool? startAtBoot,
     int? pollingInterval,
   }) async {
     _settings = _settings.copyWith(
       apiUrl: apiUrl,
       selectedPrinter: selectedPrinter,
       autoPrintEnabled: autoPrintEnabled,
+      startAtBoot: startAtBoot,
       pollingInterval: pollingInterval,
     );
 
@@ -80,6 +113,10 @@ class AppProvider extends ChangeNotifier {
     if (apiUrl != null) await prefs.setString('apiUrl', apiUrl);
     if (selectedPrinter != null) await prefs.setString('selectedPrinter', selectedPrinter);
     if (autoPrintEnabled != null) await prefs.setBool('autoPrintEnabled', autoPrintEnabled);
+    if (startAtBoot != null) {
+      await prefs.setBool('startAtBoot', startAtBoot);
+      _updateAutoStart();
+    }
     if (pollingInterval != null) await prefs.setInt('pollingInterval', pollingInterval);
 
     if (_settings.autoPrintEnabled) {
@@ -113,5 +150,15 @@ class AppProvider extends ChangeNotifier {
   void clearLogs() {
     _logs.clear();
     notifyListeners();
+  }
+
+  Future<void> _updateAutoStart() async {
+    if (Platform.isWindows) {
+      if (_settings.startAtBoot) {
+        await LaunchAtStartup.instance.enable();
+      } else {
+        await LaunchAtStartup.instance.disable();
+      }
+    }
   }
 }

@@ -91,6 +91,31 @@ class HomeScreen extends StatelessWidget {
                   onChanged: (val) => provider.updateSettings(pollingInterval: val.toInt()),
                 ),
                 
+                const SizedBox(height: 12),
+
+                // Start on Boot Toggle
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Windows bilan birga ishga tushish', style: TextStyle(fontSize: 13)),
+                      Transform.scale(
+                        scale: 0.8,
+                        child: Switch(
+                          value: settings.startAtBoot,
+                          onChanged: (val) => provider.updateSettings(startAtBoot: val),
+                          activeColor: const Color(0xFF6366F1),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
                 const Spacer(),
                 
                 // Auto Print Toggle
