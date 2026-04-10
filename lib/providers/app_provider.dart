@@ -260,26 +260,22 @@ class AppProvider extends ChangeNotifier {
       return;
     }
 
-    try {
+      // Generate a long list of 130 students to fill approx 4 A4 pages
+      final items = List.generate(130, (index) => {
+        "name": "Talaba ${index + 1} Ism Sharif",
+        "qty": "G-${(index % 10) + 100}",
+        "total": index % 3 == 0 ? "Faol" : "Nofaol",
+        "grade": "${(index % 4) + 2}"
+      });
+
       final sampleJson = {
-        "title": "Talabalar Ro'yxati",
+        "title": "Katta Talabalar Ro'yxati (4 Betlik)",
         "headers": ["F.I.SH.", "Guruh", "Status", "Baho"],
         "keys": ["name", "qty", "total", "grade"],
-        "items": [
-          {"name": "Aliyev Vali", "qty": "301", "total": "Faol", "grade": "5"},
-          {"name": "Eshmatov Toshmat", "qty": "302", "total": "Nofaol", "grade": "4"},
-          {"name": "Qodirova Laylo", "qty": "301", "total": "Faol", "grade": "5"},
-          {"name": "Jumayev Shaxzod", "qty": "303", "total": "Faol", "grade": "3"},
-          {"name": "Karimov Aziz", "qty": "301", "total": "Nofaol", "grade": "2"},
-          {"name": "Nazarov Sanjar", "qty": "302", "total": "Faol", "grade": "5"},
-          {"name": "Sultonova Madina", "qty": "303", "total": "Faol", "grade": "4"},
-          {"name": "Olimov Sardor", "qty": "301", "total": "Faol", "grade": "5"},
-          {"name": "Tursunov Doston", "qty": "302", "total": "Nofaol", "grade": "3"},
-          {"name": "Ismoilov Islom", "qty": "303", "total": "Faol", "grade": "4"}
-        ],
-        "total": "10",
+        "items": items,
+        "total": items.length.toString(),
         "currency": "nafar talaba",
-        "footer": "Barcha ma'lumotlar saqlandi."
+        "footer": "Barcha 4 betlik ma'lumotlar saqlandi."
       };
 
       final genResponse = await PdfGeneratorService.generateFromJson(sampleJson);
