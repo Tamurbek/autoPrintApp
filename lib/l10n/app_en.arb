@@ -14,5 +14,6 @@
   "update": "Update",
   "startAtBoot": "Start on Windows Boot",
   "choosePrinter": "Choose a printer",
-  "downloading": "Downloading..."
+  "downloading": "Downloading...",
+  "testPrint": "Test Print"
 }

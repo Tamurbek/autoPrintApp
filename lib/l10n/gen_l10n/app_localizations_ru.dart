@@ -55,4 +55,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get downloading => 'Загрузка...';
+
+  @override
+  String get testPrint => 'Пробная печать';
 }

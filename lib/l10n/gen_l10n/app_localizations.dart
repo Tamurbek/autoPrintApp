@@ -195,6 +195,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Downloading...'**
   String get downloading;
+
+  /// No description provided for @testPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Print'**
+  String get testPrint;
 }
 
 class _AppLocalizationsDelegate

@@ -92,6 +92,18 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: provider.testPrint,
+                  icon: const Icon(Icons.playlist_add_check_rounded, size: 18),
+                  label: Text(l10n.testPrint),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF6366F1),
+                    side: const BorderSide(color: Color(0xFF6366F1)),
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
                 const SizedBox(height: 24),
 
                 // Interval

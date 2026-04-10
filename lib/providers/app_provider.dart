@@ -8,6 +8,9 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+
 import '../models/settings.dart';
 import '../services/print_service.dart';
 import '../services/update_service.dart';
@@ -154,6 +157,50 @@ class AppProvider extends ChangeNotifier {
   void clearLogs() {
     _logs.clear();
     notifyListeners();
+  }
+
+  Future<void> testPrint() async {
+    if (_settings.selectedPrinter == null) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Error: Printer tanlanmagan");
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final pdf = pw.Document();
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.roll80,
+          build: (pw.Context context) {
+            return pw.Center(
+              child: pw.Column(
+                mainAxisAlignment: pw.MainAxisAlignment.center,
+                children: [
+                  pw.Text("AutoPrint Test Page", style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 10),
+                  pw.Text("Printer: ${_settings.selectedPrinter}"),
+                  pw.Text("Date: ${DateTime.now()}"),
+                  pw.SizedBox(height: 20),
+                  pw.Text("Xizmat muvaffaqiyatli ishlamoqda!"),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+
+      final bytes = await pdf.save();
+      final printer = _availablePrinters.firstWhere((p) => p.name == _settings.selectedPrinter);
+      await Printing.directPrintPdf(
+        printer: printer,
+        onLayout: (_) => bytes,
+      );
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Test print yuborildi");
+      notifyListeners();
+    } catch (e) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Test print xatosi: $e");
+      notifyListeners();
+    }
   }
 
   Future<void> _updateAutoStart() async {

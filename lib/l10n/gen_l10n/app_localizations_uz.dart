@@ -55,4 +55,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get downloading => 'Yuklanmoqda...';
+
+  @override
+  String get testPrint => 'Test chop etish';
 }

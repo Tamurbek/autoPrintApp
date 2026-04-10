@@ -36,6 +36,10 @@ void main() async {
   );
 
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    // Register Window Listener
+    windowManager.addListener(_WindowListener());
+    await windowManager.setPreventClose(true);
+
     // Check if started with hidden flag (for autorun)
     if (Platform.environment.containsKey('START_HIDDEN') || 
         Platform.executableArguments.contains('--hidden')) {
@@ -107,5 +111,15 @@ class AutoPrintApp extends StatelessWidget {
       ),
       home: const HomeScreen(),
     );
+  }
+}
+
+class _WindowListener extends WindowListener {
+  @override
+  void onWindowClose() async {
+    bool isPreventClose = await windowManager.isPreventClose();
+    if (isPreventClose) {
+      await windowManager.hide();
+    }
   }
 }

@@ -55,4 +55,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get downloading => 'Downloading...';
+
+  @override
+  String get testPrint => 'Test Print';
 }
