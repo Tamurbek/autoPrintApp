@@ -22,7 +22,6 @@ void main() async {
     appName: packageInfo.appName,
     appPath: Platform.resolvedExecutable,
     packageName: 'com.example.autoprint',
-    registrationDirectory: 'Software\\SimpleSale\\AutoPrint',
   );
 
   WindowOptions windowOptions = const WindowOptions(
