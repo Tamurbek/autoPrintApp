@@ -11,7 +11,10 @@ class UpdateService {
   Future<Map<String, dynamic>?> checkUpdate() async {
     try {
       final dio = Dio();
-      final response = await dio.get(githubApiUrl);
+      final response = await dio.get(
+        githubApiUrl,
+        options: Options(validateStatus: (status) => status != null && status < 500),
+      );
       
       if (response.statusCode == 200) {
         final data = response.data;
@@ -22,7 +25,7 @@ class UpdateService {
         if (_isNewer(latestVersion, currentVersion)) {
           final assets = data['assets'] as List;
           final setupAsset = assets.firstWhere(
-            (a) => a['name'].toString().contains('Setup'),
+            (a) => a['name'].toString().contains('Setup') || a['name'].toString().endsWith('.exe'),
             orElse: () => null,
           );
           
@@ -35,9 +38,14 @@ class UpdateService {
           }
         }
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode != 404) {
+        print("Update check error: $e");
+      }
     } catch (e) {
       print("Update check error: $e");
     }
+
     return null;
   }
 
