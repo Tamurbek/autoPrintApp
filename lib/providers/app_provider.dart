@@ -93,9 +93,19 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> checkForUpdates() async {
-    _updateData = await _updateService.checkUpdate();
-    notifyListeners();
+    final update = await _updateService.checkUpdate();
+    if (update != null) {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (update['version'] != packageInfo.version) {
+        _updateData = update;
+        notifyListeners();
+      } else {
+        _updateData = null;
+        notifyListeners();
+      }
+    }
   }
+
 
   Future<void> manualCheckUpdate() async {
     final update = await _updateService.checkUpdate();

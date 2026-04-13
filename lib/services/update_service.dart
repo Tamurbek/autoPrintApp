@@ -18,9 +18,14 @@ class UpdateService {
       
       if (response.statusCode == 200) {
         final data = response.data;
-        final latestVersion = data['tag_name'].toString().replaceFirst('v', '');
+        final latestTag = data['tag_name'].toString();
+        final latestVersion = latestTag.replaceFirst('v', '');
+        
         final packageInfo = await PackageInfo.fromPlatform();
         final currentVersion = packageInfo.version;
+
+        // Log comparison for debugging
+        print("Checking for updates: Current v$currentVersion, Latest v$latestVersion");
 
         if (_isNewer(latestVersion, currentVersion)) {
           final assets = data['assets'] as List;
@@ -40,11 +45,12 @@ class UpdateService {
       }
     } on DioException catch (e) {
       if (e.response?.statusCode != 404) {
-        print("Update check error: $e");
+        print("Update check error (Dio): $e");
       }
     } catch (e) {
       print("Update check error: $e");
     }
+
 
     return null;
   }
