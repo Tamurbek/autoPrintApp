@@ -1,13 +1,16 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../models/settings.dart';
 import 'pdf_generator_service.dart';
 import '../models/print_job.dart';
+
 
 class PrintService {
   Timer? _timer;
@@ -19,27 +22,12 @@ class PrintService {
     _pingTimer?.cancel();
     _isPolling = true;
 
-    // ... (Ping Timer logic remains same)
     _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
-      if (!_isPolling || !settings.autoPrintEnabled || settings.apiKey.isEmpty) return;
-      try {
-        final response = await http.post(
-          Uri.parse("${settings.apiUrl}/api/external/printers/ping"),
-          headers: {
-            'X-API-KEY': settings.apiKey,
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['success'] == true) {
-            // onLog("Ping: ${data['printer_name']} onlayn");
-          }
-        }
-      } catch (e) {
-        onLog("Ping xatosi: $e");
-      }
+      _sendPing(settings, onLog);
     });
+
+    // Send initial ping immediately
+    _sendPing(settings, onLog);
 
     // Jobs Polling Timer
     _timer = Timer.periodic(Duration(seconds: settings.pollingInterval), (timer) async {
