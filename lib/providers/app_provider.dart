@@ -54,11 +54,9 @@ class AppProvider extends ChangeNotifier {
   Future<void> _initTray() async {
     if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
       try {
-        await trayManager.setIcon(
-          Platform.isWindows 
-            ? 'windows/runner/resources/app_icon.ico' 
-            : 'assets/icon.png',
-        );
+        // Use the bundled asset for consistency across all platforms
+        await trayManager.setIcon('assets/icon.png');
+        
         Menu menu = Menu(
           items: [
             MenuItem(label: 'Open', onClick: (_) => windowManager.show()),
@@ -66,6 +64,7 @@ class AppProvider extends ChangeNotifier {
             MenuItem(label: 'Exit', onClick: (_) => exit(0)),
           ],
         );
+
         await trayManager.setContextMenu(menu);
       } catch (e) {
         debugPrint('Tray initialization error: $e');

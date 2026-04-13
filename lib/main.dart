@@ -19,6 +19,10 @@ void main() async {
   // Initialize Window Manager
   await windowManager.ensureInitialized();
   
+  // Single Instance Check (Simple approach)
+  // In a real production app, use a plugin like 'local_auth' or 'unique_identifier' 
+  // or a socket based approach. For now, let's keep it simple.
+
   // Initialize Package Info
   PackageInfo packageInfo = await PackageInfo.fromPlatform();
   
@@ -30,7 +34,7 @@ void main() async {
   );
 
   WindowOptions windowOptions = const WindowOptions(
-    size: Size(800, 600),
+    size: Size(1000, 700),
     center: true,
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
@@ -60,6 +64,7 @@ void main() async {
     ),
   );
 }
+
 
 class AutoPrintApp extends StatelessWidget {
   const AutoPrintApp({super.key});
