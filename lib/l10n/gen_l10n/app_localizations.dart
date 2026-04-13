@@ -225,6 +225,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Update available!'**
   String get updateAvailable;
+
+  /// No description provided for @apiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API Key'**
+  String get apiKey;
 }
 
 class _AppLocalizationsDelegate

@@ -70,4 +70,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateAvailable => 'Update available!';
+
+  @override
+  String get apiKey => 'API Key';
 }

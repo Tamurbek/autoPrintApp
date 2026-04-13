@@ -19,5 +19,7 @@
   "testJsonPrint": "Test JSON Print",
   "checkUpdate": "Check for Updates",
   "noUpdate": "No update available",
-  "updateAvailable": "Update available!"
+  "updateAvailable": "Update available!",
+  "apiKey": "API Key"
 }
+

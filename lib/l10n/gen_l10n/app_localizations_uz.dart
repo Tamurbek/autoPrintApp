@@ -70,4 +70,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get updateAvailable => 'Yangilanish mavjud!';
+
+  @override
+  String get apiKey => 'API Kaliti';
 }

@@ -1,6 +1,7 @@
 
 class AppSettings {
   final String apiUrl;
+  final String apiKey;
   final String? selectedPrinter;
   final bool autoPrintEnabled;
   final bool startAtBoot;
@@ -9,6 +10,7 @@ class AppSettings {
 
   AppSettings({
     required this.apiUrl,
+    required this.apiKey,
     this.selectedPrinter,
     this.autoPrintEnabled = false,
     this.startAtBoot = true,
@@ -18,6 +20,7 @@ class AppSettings {
 
   AppSettings copyWith({
     String? apiUrl,
+    String? apiKey,
     String? selectedPrinter,
     bool? autoPrintEnabled,
     bool? startAtBoot,
@@ -26,6 +29,7 @@ class AppSettings {
   }) {
     return AppSettings(
       apiUrl: apiUrl ?? this.apiUrl,
+      apiKey: apiKey ?? this.apiKey,
       selectedPrinter: selectedPrinter ?? this.selectedPrinter,
       autoPrintEnabled: autoPrintEnabled ?? this.autoPrintEnabled,
       startAtBoot: startAtBoot ?? this.startAtBoot,
@@ -34,3 +38,4 @@ class AppSettings {
     );
   }
 }
+

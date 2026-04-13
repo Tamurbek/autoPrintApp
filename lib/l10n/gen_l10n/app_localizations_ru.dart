@@ -70,4 +70,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get updateAvailable => 'Доступно обновление!';
+
+  @override
+  String get apiKey => 'API Ключ';
 }

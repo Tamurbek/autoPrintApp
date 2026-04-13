@@ -7,64 +7,124 @@ import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import '../models/settings.dart';
 import 'pdf_generator_service.dart';
+import '../models/print_job.dart';
 
 class PrintService {
   Timer? _timer;
+  Timer? _pingTimer;
   bool _isPolling = false;
 
-  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?) onPrint) {
+  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid) onPrint) {
     _timer?.cancel();
+    _pingTimer?.cancel();
     _isPolling = true;
-    _timer = Timer.periodic(Duration(seconds: settings.pollingInterval), (timer) async {
-      if (!_isPolling || !settings.autoPrintEnabled) return;
-      
-      try {
-        onLog("Checking API: ${settings.apiUrl}");
-        final response = await http.get(Uri.parse(settings.apiUrl));
-        
-        if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
-          Uint8List printData = response.bodyBytes;
-          PdfGeneratorResponse? genResponse;
-          
-          // Check if response is JSON
-          final contentType = response.headers['content-type'] ?? '';
-          if (contentType.contains('application/json') || response.body.trim().startsWith('{')) {
-            try {
-              onLog("JSON ma'lumot keldi, PDF-ga o'tkazilmoqda...");
-              final jsonData = jsonDecode(response.body);
-              genResponse = await PdfGeneratorService.generateFromJson(jsonData);
-              printData = genResponse.bytes;
-              onLog("Muvaffaqiyatli o'tkazildi: ${genResponse.pageCount} bet.");
-            } catch (e) {
-              onLog("JSON Parse Xatosi: $e. Xom ma'lumot sifatida chop etish...");
-            }
-          }
 
-          onLog("Hujjat keldi. Tasdiqlash kutilmoqda...");
-          // We can track pageCount if it's from JSON
-          int? pageCount;
-          if (genResponse != null) pageCount = genResponse.pageCount;
-          
-          onPrint(printData, pageCount); 
-        } else if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
-          // No documents to print
-        } else {
-          onLog("API Error: ${response.statusCode}");
+    // Ping Timer (every 30 seconds)
+    _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (!_isPolling || !settings.autoPrintEnabled || settings.apiKey.isEmpty) return;
+      try {
+        final response = await http.post(
+          Uri.parse("${settings.apiUrl}/api/external/printers/ping"),
+          headers: {
+            'X-API-KEY': settings.apiKey,
+            'Content-Type': 'application/json',
+          },
+        );
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['success'] == true) {
+            // onLog("Ping: ${data['printer_name']} onlayn");
+          }
         }
       } catch (e) {
-        onLog("Error fetching/printing: $e");
+        onLog("Ping xatosi: $e");
       }
     });
+
+    // Jobs Polling Timer
+    _timer = Timer.periodic(Duration(seconds: settings.pollingInterval), (timer) async {
+      if (!_isPolling || !settings.autoPrintEnabled || settings.apiKey.isEmpty) return;
+      
+      try {
+        final response = await http.get(
+          Uri.parse("${settings.apiUrl}/api/external/printers/jobs/pending"),
+          headers: {
+            'X-API-KEY': settings.apiKey,
+            'Content-Type': 'application/json',
+          },
+        );
+        
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body);
+          if (body['success'] == true) {
+            final List jobsData = body['data'];
+            if (jobsData.isNotEmpty) {
+              onLog("${jobsData.length} ta yangi topshiriq topildi.");
+              
+              for (var jobData in jobsData) {
+                final job = PrintJob.fromJson(jobData);
+                onLog("Topshiriq yuklanmoqda: ${job.documentName}");
+                
+                try {
+                  Uint8List? printData;
+                  int? pageCount;
+
+                  if (job.type == 'html') {
+                    // HTML to PDF conversion if possible, or use existing generator
+                    // For now, let's see if we can use Printing.convertHtml
+                    printData = await Printing.convertHtml(
+                      html: job.html,
+                      format: PdfPageFormat.a4,
+                    );
+                  }
+
+                  if (printData != null) {
+                    onPrint(printData, pageCount, job.uuid);
+                  } else {
+                    await reportStatus(settings, job.uuid, 'failed', error: "Unsupported job type: ${job.type}");
+                  }
+                } catch (e) {
+                  onLog("Chop etishga tayyorlashda xatolik: $e");
+                  await reportStatus(settings, job.uuid, 'failed', error: e.toString());
+                }
+              }
+            }
+          }
+        } else if (response.statusCode != 204) {
+          onLog("API Error: ${response.statusCode} - ${response.body}");
+        }
+      } catch (e) {
+        onLog("Error fetching jobs: $e");
+      }
+    });
+  }
+
+  Future<void> reportStatus(AppSettings settings, String jobUuid, String status, {String? error}) async {
+    try {
+      await http.post(
+        Uri.parse("${settings.apiUrl}/api/external/printers/jobs/$jobUuid/status"),
+        headers: {
+          'X-API-KEY': settings.apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'status': status,
+          'error': error,
+        }),
+      );
+    } catch (e) {
+      print("Status reporting error: $e");
+    }
   }
 
   void stopPolling() {
     _isPolling = false;
     _timer?.cancel();
+    _pingTimer?.cancel();
   }
 
   Future<void> printDocument(Uint8List data, String? printerName) async {
     if (printerName == null) {
-      // If no printer selected, show print dialog as fallback
       await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => data);
       return;
     }
@@ -85,3 +145,4 @@ class PrintService {
     return await Printing.listPrinters();
   }
 }
+

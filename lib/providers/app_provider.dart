@@ -22,7 +22,11 @@ import '../main.dart';
 import '../services/pdf_generator_service.dart';
 
 class AppProvider extends ChangeNotifier {
-  AppSettings _settings = AppSettings(apiUrl: "");
+  AppSettings _settings = AppSettings(
+    apiUrl: "http://10.42.0.255", 
+    apiKey: "cd8d7cd62ea64c5aa5cac6b48ed12e3f",
+  );
+
   final PrintService _printService = PrintService();
   final UpdateService _updateService = UpdateService();
   final List<String> _logs = [];
@@ -72,7 +76,9 @@ class AppProvider extends ChangeNotifier {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _settings = AppSettings(
-      apiUrl: prefs.getString('apiUrl') ?? "",
+      apiUrl: prefs.getString('apiUrl') ?? "http://10.42.0.255",
+      apiKey: prefs.getString('apiKey') ?? "cd8d7cd62ea64c5aa5cac6b48ed12e3f",
+
       selectedPrinter: prefs.getString('selectedPrinter'),
       autoPrintEnabled: prefs.getBool('autoPrintEnabled') ?? false,
       startAtBoot: prefs.getBool('startAtBoot') ?? true,
@@ -127,6 +133,7 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> updateSettings({
     String? apiUrl,
+    String? apiKey,
     String? selectedPrinter,
     bool? autoPrintEnabled,
     bool? startAtBoot,
@@ -135,6 +142,7 @@ class AppProvider extends ChangeNotifier {
   }) async {
     _settings = _settings.copyWith(
       apiUrl: apiUrl,
+      apiKey: apiKey,
       selectedPrinter: selectedPrinter,
       autoPrintEnabled: autoPrintEnabled,
       startAtBoot: startAtBoot,
@@ -144,6 +152,7 @@ class AppProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     if (apiUrl != null) await prefs.setString('apiUrl', apiUrl);
+    if (apiKey != null) await prefs.setString('apiKey', apiKey);
     if (selectedPrinter != null) await prefs.setString('selectedPrinter', selectedPrinter);
     if (autoPrintEnabled != null) await prefs.setBool('autoPrintEnabled', autoPrintEnabled);
     if (startAtBoot != null) {
@@ -170,17 +179,35 @@ class AppProvider extends ChangeNotifier {
         if (_logs.length > 100) _logs.removeLast();
         notifyListeners();
       },
-      (data, pageCount) async {
+      (data, pageCount, jobUuid) async {
         _lastPdfBytes = data;
         notifyListeners();
         
         final context = navigatorKey.currentContext;
         if (context != null) {
-          final confirmed = await PrintConfirmationDialog.show(context, pageCount);
-          if (confirmed == true) {
-            await _printService.printDocument(data, _settings.selectedPrinter);
-            _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Hujjat chop etildi.");
-            notifyListeners();
+          bool confirmed = true;
+          // If autoPrintEnabled is true, we might want to skip confirmation if settings allow
+          // But here it seems the logic was to always show confirmation.
+          // The user request says "har 5-10 soniyada jobs/pending endpointiga murojaat qiladi. Ro'yxatda ish paydo bo'lsa, uni chop etadi"
+          // This implies automatic execution.
+          
+          if (_settings.autoPrintEnabled) {
+            confirmed = true;
+          } else {
+            confirmed = await PrintConfirmationDialog.show(context, pageCount) ?? false;
+          }
+
+          if (confirmed) {
+            try {
+              await _printService.printDocument(data, _settings.selectedPrinter);
+              _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Hujjat chop etildi.");
+              await _printService.reportStatus(_settings, jobUuid, 'completed');
+              notifyListeners();
+            } catch (e) {
+              _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Xatolik: $e");
+              await _printService.reportStatus(_settings, jobUuid, 'failed', error: e.toString());
+              notifyListeners();
+            }
           } else {
             _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Chop etish bekor qilindi.");
             notifyListeners();

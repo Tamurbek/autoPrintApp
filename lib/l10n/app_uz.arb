@@ -19,5 +19,7 @@
   "testJsonPrint": "JSON Test chop etish",
   "checkUpdate": "Yangilanishni tekshirish",
   "noUpdate": "Yangilanish mavjud emas",
-  "updateAvailable": "Yangilanish mavjud!"
+  "updateAvailable": "Yangilanish mavjud!",
+  "apiKey": "API Kaliti"
 }
+

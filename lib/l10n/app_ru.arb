@@ -19,5 +19,7 @@
   "testJsonPrint": "Тест JSON печати",
   "checkUpdate": "Проверить обновления",
   "noUpdate": "Нет доступных обновлений",
-  "updateAvailable": "Доступно обновление!"
+  "updateAvailable": "Доступно обновление!",
+  "apiKey": "API Ключ"
 }
+
