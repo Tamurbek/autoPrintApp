@@ -54,8 +54,12 @@ class AppProvider extends ChangeNotifier {
   Future<void> _initTray() async {
     if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
       try {
-        // Use the bundled asset for consistency across all platforms
-        await trayManager.setIcon('assets/icon.png');
+        if (Platform.isWindows) {
+          await trayManager.setIcon('assets/app_icon.ico');
+        } else {
+          await trayManager.setIcon('assets/icon.png');
+        }
+
         
         Menu menu = Menu(
           items: [
