@@ -111,6 +111,31 @@ class PrintService {
     }
   }
 
+  Future<void> _sendPing(AppSettings settings, Function(String) onLog) async {
+    if (!_isPolling || !settings.autoPrintEnabled || settings.apiKey.isEmpty) return;
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      await http.post(
+        Uri.parse("${settings.apiUrl}/api/external/printers/ping"),
+        headers: {
+          'X-API-KEY': settings.apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'version': packageInfo.version,
+          'hostname': Platform.localHostname,
+          'os': Platform.operatingSystem,
+          'printer_name': settings.selectedPrinter ?? 'Not Selected',
+          'status': 'running',
+          'last_ping': DateTime.now().toIso8601String(),
+        }),
+      );
+    } catch (e) {
+      // Ignore ping errors
+    }
+  }
+
+
   void stopPolling() {
     _isPolling = false;
     _timer?.cancel();
