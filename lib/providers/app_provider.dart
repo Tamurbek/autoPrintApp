@@ -20,8 +20,10 @@ import '../ui/dialogs/print_confirmation_dialog.dart';
 import '../l10n/gen_l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/pdf_generator_service.dart';
+import '../services/websocket_service.dart';
 
 class AppProvider extends ChangeNotifier {
+
   AppSettings _settings = AppSettings(
     apiUrl: "http://10.42.0.255", 
     apiKey: "cd8d7cd62ea64c5aa5cac6b48ed12e3f",
@@ -178,53 +180,68 @@ class AppProvider extends ChangeNotifier {
     if (_settings.autoPrintEnabled) {
       _startService();
     } else {
-      _printService.stopPolling();
+      _stopService();
     }
+
     
     notifyListeners();
   }
 
-  void _startService() {
-    _printService.startPolling(
-      _settings,
-      (msg) {
-        _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: $msg");
-        if (_logs.length > 100) _logs.removeLast();
-        notifyListeners();
-      },
-      (data, pageCount, jobUuid, copies) async {
-        _lastPdfBytes = data;
-        notifyListeners();
-        
-        final context = navigatorKey.currentContext;
-        if (context != null) {
-          bool confirmed = true;
-          
-          if (_settings.autoPrintEnabled) {
-            confirmed = true;
-          } else {
-            confirmed = await PrintConfirmationDialog.show(context, pageCount) ?? false;
-          }
+  late final WebSocketService _wsService;
 
-          if (confirmed) {
-            try {
-              await _printService.printDocument(data, _settings.selectedPrinter, copies: copies);
-              _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Hujjat chop etildi ($copies nusxa).");
-              await _printService.reportStatus(_settings, jobUuid, 'completed');
-              notifyListeners();
-            } catch (e) {
-              _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Xatolik: $e");
-              await _printService.reportStatus(_settings, jobUuid, 'failed', error: e.toString());
-              notifyListeners();
-            }
-          } else {
-            _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Chop etish bekor qilindi.");
-            notifyListeners();
-          }
+  void _startService() {
+    // Polling callback
+    final onLogCb = (String msg) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: $msg");
+      if (_logs.length > 100) _logs.removeLast();
+      notifyListeners();
+    };
+
+    final onPrintCb = (Uint8List data, int? pageCount, String jobUuid, int copies) async {
+      _lastPdfBytes = data;
+      notifyListeners();
+      
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        bool confirmed = true;
+        if (!_settings.autoPrintEnabled) {
+          confirmed = await PrintConfirmationDialog.show(context, pageCount) ?? false;
         }
+
+        if (confirmed) {
+          try {
+            await _printService.printDocument(data, _settings.selectedPrinter, copies: copies);
+            onLogCb("Hujjat chop etildi ($copies nusxa).");
+            await _printService.reportStatus(_settings, jobUuid, 'completed');
+          } catch (e) {
+            onLogCb("Xatolik: $e");
+            await _printService.reportStatus(_settings, jobUuid, 'failed', error: e.toString());
+          }
+        } else {
+          onLogCb("Chop etish bekor qilindi.");
+        }
+        notifyListeners();
+      }
+    };
+
+    _printService.startPolling(_settings, onLogCb, onPrintCb);
+
+    // WebSocket initialization
+    _wsService = WebSocketService(
+      onLog: onLogCb,
+      onNewJob: () {
+        onLogCb("WebSocket: Yangi topshiriq xabari olindi.");
+        _printService.checkPendingJobs(_settings, onLogCb, onPrintCb);
       },
     );
+    _wsService.connect(_settings);
   }
+
+  void _stopService() {
+    _printService.stopPolling();
+    _wsService.disconnect();
+  }
+
 
 
   Future<void> _refreshPrinters() async {

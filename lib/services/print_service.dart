@@ -43,59 +43,67 @@ class PrintService {
 
     // Jobs Polling Timer
     _timer = Timer.periodic(Duration(seconds: settings.pollingInterval), (timer) async {
-      if (!_isPolling || !settings.autoPrintEnabled || settings.apiKey.isEmpty) return;
+      checkPendingJobs(settings, onLog, onPrint);
+    });
+    
+    // Check once immediately on start
+    checkPendingJobs(settings, onLog, onPrint);
+  }
+
+  Future<void> checkPendingJobs(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies) onPrint) async {
+    if (!_isPolling || !settings.autoPrintEnabled || settings.apiKey.isEmpty) return;
+    
+    try {
+      final response = await http.get(
+        Uri.parse("${settings.apiUrl}/api/external/printers/jobs/pending"),
+        headers: {
+          'X-API-KEY': settings.apiKey,
+          'Content-Type': 'application/json',
+        },
+      );
       
-      try {
-        final response = await http.get(
-          Uri.parse("${settings.apiUrl}/api/external/printers/jobs/pending"),
-          headers: {
-            'X-API-KEY': settings.apiKey,
-            'Content-Type': 'application/json',
-          },
-        );
-        
-        if (response.statusCode == 200) {
-          final body = jsonDecode(response.body);
-          if (body['success'] == true) {
-            final List jobsData = body['data'];
-            if (jobsData.isNotEmpty) {
-              onLog("${jobsData.length} ta yangi topshiriq topildi.");
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          final List jobsData = body['data'];
+          if (jobsData.isNotEmpty) {
+            onLog("${jobsData.length} ta yangi topshiriq topildi.");
+            
+            for (var jobData in jobsData) {
+              final job = PrintJob.fromJson(jobData);
+              onLog("Topshiriq yuklanmoqda: ${job.documentName} (${job.copies} nusxa)");
               
-              for (var jobData in jobsData) {
-                final job = PrintJob.fromJson(jobData);
-                onLog("Topshiriq yuklanmoqda: ${job.documentName} (${job.copies} nusxa)");
-                
-                try {
-                  Uint8List? printData;
-                  int? pageCount;
+              try {
+                Uint8List? printData;
+                int? pageCount;
 
-                  if (job.type == 'html') {
-                    printData = await Printing.convertHtml(
-                      html: job.html,
-                      format: PdfPageFormat.a4,
-                    );
-                  }
-
-                  if (printData != null) {
-                    onPrint(printData, pageCount, job.uuid, job.copies);
-                  } else {
-                    await reportStatus(settings, job.uuid, 'failed', error: "Unsupported job type: ${job.type}");
-                  }
-                } catch (e) {
-                  onLog("Chop etishga tayyorlashda xatolik: $e");
-                  await reportStatus(settings, job.uuid, 'failed', error: e.toString());
+                if (job.type == 'html') {
+                  printData = await Printing.convertHtml(
+                    html: job.html,
+                    format: PdfPageFormat.a4,
+                  );
                 }
+
+                if (printData != null) {
+                  onPrint(printData, pageCount, job.uuid, job.copies);
+                } else {
+                  await reportStatus(settings, job.uuid, 'failed', error: "Unsupported job type: ${job.type}");
+                }
+              } catch (e) {
+                onLog("Chop etishga tayyorlashda xatolik: $e");
+                await reportStatus(settings, job.uuid, 'failed', error: e.toString());
               }
             }
           }
-        } else if (response.statusCode != 204) {
-          onLog("API Error: ${response.statusCode} - ${response.body}");
         }
-      } catch (e) {
-        onLog("Error fetching jobs: $e");
+      } else if (response.statusCode != 204) {
+        onLog("API Error: ${response.statusCode} - ${response.body}");
       }
-    });
+    } catch (e) {
+      onLog("Error fetching jobs: $e");
+    }
   }
+
 
   Future<void> reportStatus(AppSettings settings, String jobUuid, String status, {String? error}) async {
     try {
