@@ -73,7 +73,10 @@ class UpdateService {
     try {
       final dio = Dio();
       final tempDir = await getTemporaryDirectory();
-      final filePath = "${tempDir.path}/AutoPrint_Update.exe";
+      
+      // Use unique filename to avoid "Access Denied" errors if previous file is locked
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath = "${tempDir.path}/AutoPrint_Update_$timestamp.exe";
       
       await dio.download(
         url, 
@@ -87,9 +90,13 @@ class UpdateService {
 
       // Execute the installer
       await OpenAppFile.open(filePath);
-      exit(0); // Close app to allow installation
+      
+      // Wait a bit and exit to allow installer to run
+      await Future.delayed(const Duration(seconds: 1));
+      exit(0);
     } catch (e) {
-      print("Download/Install error: $e");
+      throw e; // Rethrow to be caught by provider and shown in UI
     }
   }
+
 }

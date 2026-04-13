@@ -86,14 +86,21 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       final tempDir = await getTemporaryDirectory();
       final downloadUrl = widget.url;
       
-      String fileName = 'AutoPrint_Update_v${widget.version}.exe';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      String fileName = 'AutoPrint_Update_v${widget.version}_$timestamp.exe';
       if (Platform.isAndroid) {
-        fileName = 'AutoPrint_v${widget.version}.apk';
+        fileName = 'AutoPrint_v${widget.version}_$timestamp.apk';
       }
       
       final filePath = '${tempDir.path}/$fileName';
       final file = File(filePath);
-      if (await file.exists()) await file.delete();
+      
+      try {
+        if (await file.exists()) await file.delete();
+      } catch (e) {
+        // Ignore deletion error, since we use a unique timestamped filename, 
+        // collision is highly unlikely anyway.
+      }
 
       await dio.download(
         downloadUrl,
