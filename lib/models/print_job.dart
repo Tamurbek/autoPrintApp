@@ -6,6 +6,7 @@ class PrintJob {
   final String type;
   final String html;
   final String documentName;
+  final int copies;
   final String status;
   final String? createdAt;
 
@@ -16,6 +17,7 @@ class PrintJob {
     required this.type,
     required this.html,
     required this.documentName,
+    this.copies = 1,
     required this.status,
     this.createdAt,
   });
@@ -29,8 +31,10 @@ class PrintJob {
       type: data['type'],
       html: data['html'],
       documentName: data['document_name'],
+      copies: data['copies'] ?? 1,
       status: json['status'],
       createdAt: json['created_at'],
     );
   }
 }
+

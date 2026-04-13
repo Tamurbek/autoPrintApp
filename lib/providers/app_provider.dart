@@ -179,17 +179,13 @@ class AppProvider extends ChangeNotifier {
         if (_logs.length > 100) _logs.removeLast();
         notifyListeners();
       },
-      (data, pageCount, jobUuid) async {
+      (data, pageCount, jobUuid, copies) async {
         _lastPdfBytes = data;
         notifyListeners();
         
         final context = navigatorKey.currentContext;
         if (context != null) {
           bool confirmed = true;
-          // If autoPrintEnabled is true, we might want to skip confirmation if settings allow
-          // But here it seems the logic was to always show confirmation.
-          // The user request says "har 5-10 soniyada jobs/pending endpointiga murojaat qiladi. Ro'yxatda ish paydo bo'lsa, uni chop etadi"
-          // This implies automatic execution.
           
           if (_settings.autoPrintEnabled) {
             confirmed = true;
@@ -199,8 +195,8 @@ class AppProvider extends ChangeNotifier {
 
           if (confirmed) {
             try {
-              await _printService.printDocument(data, _settings.selectedPrinter);
-              _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Hujjat chop etildi.");
+              await _printService.printDocument(data, _settings.selectedPrinter, copies: copies);
+              _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Hujjat chop etildi ($copies nusxa).");
               await _printService.reportStatus(_settings, jobUuid, 'completed');
               notifyListeners();
             } catch (e) {
@@ -216,6 +212,7 @@ class AppProvider extends ChangeNotifier {
       },
     );
   }
+
 
   Future<void> _refreshPrinters() async {
     _availablePrinters = await _printService.getPrinters();

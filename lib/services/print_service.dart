@@ -14,12 +14,12 @@ class PrintService {
   Timer? _pingTimer;
   bool _isPolling = false;
 
-  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid) onPrint) {
+  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies) onPrint) {
     _timer?.cancel();
     _pingTimer?.cancel();
     _isPolling = true;
 
-    // Ping Timer (every 30 seconds)
+    // ... (Ping Timer logic remains same)
     _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (!_isPolling || !settings.autoPrintEnabled || settings.apiKey.isEmpty) return;
       try {
@@ -63,15 +63,13 @@ class PrintService {
               
               for (var jobData in jobsData) {
                 final job = PrintJob.fromJson(jobData);
-                onLog("Topshiriq yuklanmoqda: ${job.documentName}");
+                onLog("Topshiriq yuklanmoqda: ${job.documentName} (${job.copies} nusxa)");
                 
                 try {
                   Uint8List? printData;
                   int? pageCount;
 
                   if (job.type == 'html') {
-                    // HTML to PDF conversion if possible, or use existing generator
-                    // For now, let's see if we can use Printing.convertHtml
                     printData = await Printing.convertHtml(
                       html: job.html,
                       format: PdfPageFormat.a4,
@@ -79,7 +77,7 @@ class PrintService {
                   }
 
                   if (printData != null) {
-                    onPrint(printData, pageCount, job.uuid);
+                    onPrint(printData, pageCount, job.uuid, job.copies);
                   } else {
                     await reportStatus(settings, job.uuid, 'failed', error: "Unsupported job type: ${job.type}");
                   }
@@ -123,7 +121,7 @@ class PrintService {
     _pingTimer?.cancel();
   }
 
-  Future<void> printDocument(Uint8List data, String? printerName) async {
+  Future<void> printDocument(Uint8List data, String? printerName, {int copies = 1}) async {
     if (printerName == null) {
       await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => data);
       return;
@@ -135,11 +133,14 @@ class PrintService {
       orElse: () => printers.first,
     );
 
-    await Printing.directPrintPdf(
-      printer: printer,
-      onLayout: (PdfPageFormat format) async => data,
-    );
+    for (int i = 0; i < copies; i++) {
+      await Printing.directPrintPdf(
+        printer: printer,
+        onLayout: (PdfPageFormat format) async => data,
+      );
+    }
   }
+
   
   Future<List<Printer>> getPrinters() async {
     return await Printing.listPrinters();
