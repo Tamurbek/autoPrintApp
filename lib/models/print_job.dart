@@ -1,4 +1,6 @@
 
+import 'dart:typed_data';
+
 class PrintJob {
   final String uuid;
   final String printerId;
@@ -9,6 +11,9 @@ class PrintJob {
   final int copies;
   final String status;
   final String? createdAt;
+  
+  // Non-final field to store temporary data
+  Uint8List? pdfBytes;
 
   PrintJob({
     required this.uuid,

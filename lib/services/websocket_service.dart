@@ -8,6 +8,7 @@ class WebSocketService {
   WebSocketChannel? _channel;
   bool _isConnected = false;
   Timer? _reconnectTimer;
+  int _retryCount = 0;
   
   final Function(String) onLog;
   final Function() onNewJob;
@@ -41,6 +42,7 @@ class WebSocketService {
       
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
       _isConnected = true;
+      _retryCount = 0; // Reset on success attempts
       onStatusChange?.call(true);
       
       _channel!.stream.listen(
@@ -83,8 +85,15 @@ class WebSocketService {
   }
 
   void _retryConnection(AppSettings settings) {
+    if (_isConnected) return;
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+    
+    _retryCount++;
+    final delay = (5 * _retryCount).clamp(5, 60); // 5s, 10s, 15s... max 60s
+    
+    onLog("WebSocket qayta ulanishga urinish ($delay sek kutmoqda)...");
+    
+    _reconnectTimer = Timer(Duration(seconds: delay), () {
       if (!_isConnected) connect(settings);
     });
   }

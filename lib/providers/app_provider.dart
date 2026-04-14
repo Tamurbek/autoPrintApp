@@ -1,4 +1,5 @@
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:printing/printing.dart';
@@ -21,6 +22,7 @@ import '../l10n/gen_l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/pdf_generator_service.dart';
 import '../services/websocket_service.dart';
+import '../models/print_job.dart';
 
 class AppProvider extends ChangeNotifier with TrayListener {
 
@@ -40,6 +42,7 @@ class AppProvider extends ChangeNotifier with TrayListener {
   bool _isDownloading = false;
   bool _isWsConnected = false;
   Uint8List? _lastPdfBytes;
+  final List<PrintJob> _pendingQueue = [];
 
   AppSettings get settings => _settings;
   List<String> get logs => _logs;
@@ -49,6 +52,7 @@ class AppProvider extends ChangeNotifier with TrayListener {
   bool get isDownloading => _isDownloading;
   bool get isWsConnected => _isWsConnected;
   Uint8List? get lastPdfBytes => _lastPdfBytes;
+  List<PrintJob> get pendingQueue => _pendingQueue;
 
   AppProvider() {
     _initWsService();
@@ -96,7 +100,10 @@ class AppProvider extends ChangeNotifier with TrayListener {
       onLog: onLogCb,
       onNewJob: () {
         onLogCb("WebSocket: Yangi topshiriq xabari olindi.");
-        _printService.checkPendingJobs(_settings, onLogCb, onPrintCb);
+        // Filter out jobs already in the queue
+        _printService.checkPendingJobs(_settings, onLogCb, (data, count, uuid, copies, job) {
+           _processJob(data, count, uuid, copies, job);
+        });
       },
       onStatusChange: (status) {
         _isWsConnected = status;
@@ -164,7 +171,65 @@ class AppProvider extends ChangeNotifier with TrayListener {
     if (_settings.autoPrintEnabled) {
       _startService();
     }
+    // Check jobs regardless, they will go to queue if autoPrint is off
+    _checkForJobsInitially();
     checkForUpdates();
+  }
+
+  void _checkForJobsInitially() {
+    _printService.checkPendingJobs(_settings, (msg) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: $msg");
+      notifyListeners();
+    }, _processJob);
+  }
+
+  void _processJob(Uint8List data, int? pageCount, String jobUuid, int copies, PrintJob job) async {
+    _lastPdfBytes = data;
+    // Check if duplicate
+    if (_pendingQueue.any((j) => j.uuid == jobUuid)) return;
+
+    if (_settings.autoPrintEnabled) {
+      try {
+        await _printService.printDocument(data, _settings.selectedPrinter, copies: copies);
+        _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Hujjat avtomatik chop etildi.");
+        await _printService.reportStatus(_settings, jobUuid, 'completed');
+        notifyListeners();
+      } catch (e) {
+        _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Xatolik: $e");
+        await _printService.reportStatus(_settings, jobUuid, 'failed', error: e.toString());
+        notifyListeners();
+      }
+    } else {
+      // Add to manual queue
+      job.pdfBytes = data; // We'll need to store bytes in the job model temporarily
+      _pendingQueue.add(job);
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Yangi vazifa navbatga qo'shildi: ${job.documentName}");
+      notifyListeners();
+    }
+  }
+
+  Future<void> printQueueItem(PrintJob job) async {
+    if (job.pdfBytes == null) return;
+    try {
+      await _printService.printDocument(job.pdfBytes!, _settings.selectedPrinter, copies: job.copies);
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Hujjat chop etildi: ${job.documentName}");
+      await _printService.reportStatus(_settings, job.uuid, 'completed');
+      _pendingQueue.removeWhere((j) => j.uuid == job.uuid);
+      notifyListeners();
+    } catch (e) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Xatolik: $e");
+    }
+  }
+
+  Future<void> cancelQueueItem(PrintJob job) async {
+    try {
+      await _printService.reportStatus(_settings, job.uuid, 'failed', error: "Foydalanuvchi bekor qildi");
+      _pendingQueue.removeWhere((j) => j.uuid == job.uuid);
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Vazifa bekor qilindi: ${job.documentName}");
+      notifyListeners();
+    } catch (e) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Bekor qilishda xato: $e");
+    }
   }
 
   Future<void> checkForUpdates() async {
@@ -263,34 +328,7 @@ class AppProvider extends ChangeNotifier with TrayListener {
       notifyListeners();
     };
 
-    final onPrintCb = (Uint8List data, int? pageCount, String jobUuid, int copies) async {
-      _lastPdfBytes = data;
-      notifyListeners();
-      
-      final context = navigatorKey.currentContext;
-      if (context != null) {
-        bool confirmed = true;
-        if (!_settings.autoPrintEnabled) {
-          confirmed = await PrintConfirmationDialog.show(context, pageCount) ?? false;
-        }
-
-        if (confirmed) {
-          try {
-            await _printService.printDocument(data, _settings.selectedPrinter, copies: copies);
-            onLogCb("Hujjat chop etildi ($copies nusxa).");
-            await _printService.reportStatus(_settings, jobUuid, 'completed');
-          } catch (e) {
-            onLogCb("Xatolik: $e");
-            await _printService.reportStatus(_settings, jobUuid, 'failed', error: e.toString());
-          }
-        } else {
-          onLogCb("Chop etish bekor qilindi.");
-        }
-        notifyListeners();
-      }
-    };
-
-    _printService.startPolling(_settings, onLogCb, onPrintCb);
+    _printService.startPolling(_settings, onLogCb, _processJob);
     _wsService.connect(_settings);
   }
 

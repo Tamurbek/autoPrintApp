@@ -17,7 +17,7 @@ class PrintService {
   Timer? _pingTimer;
   bool _isPolling = false;
 
-  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies) onPrint) {
+  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies, PrintJob job) onPrint) {
     _timer?.cancel();
     _pingTimer?.cancel();
     _isPolling = true;
@@ -38,8 +38,8 @@ class PrintService {
     checkPendingJobs(settings, onLog, onPrint);
   }
 
-  Future<void> checkPendingJobs(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies) onPrint) async {
-    if (!_isPolling || !settings.autoPrintEnabled || settings.apiKey.isEmpty) return;
+  Future<void> checkPendingJobs(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies, PrintJob job) onPrint) async {
+    if (!_isPolling || settings.apiKey.isEmpty) return;
     
     try {
       final response = await http.get(
@@ -48,7 +48,7 @@ class PrintService {
           'X-API-KEY': settings.apiKey,
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(const Duration(seconds: 10));
       
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -73,7 +73,7 @@ class PrintService {
                 }
 
                 if (printData != null) {
-                  onPrint(printData, pageCount, job.uuid, job.copies);
+                  onPrint(printData, pageCount, job.uuid, job.copies, job);
                 } else {
                   await reportStatus(settings, job.uuid, 'failed', error: "Unsupported job type: ${job.type}");
                 }
@@ -105,7 +105,7 @@ class PrintService {
           'status': status,
           'error': error,
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
     } catch (e) {
       print("Status reporting error: $e");
     }
@@ -129,7 +129,7 @@ class PrintService {
           'status': 'running',
           'last_ping': DateTime.now().toIso8601String(),
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);

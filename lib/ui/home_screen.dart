@@ -1,8 +1,9 @@
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/gen_l10n/app_localizations.dart';
 import '../providers/app_provider.dart';
+import '../models/print_job.dart';
 import 'dialogs/pdf_preview_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -12,8 +13,24 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   bool _isLocked = true;
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+       vsync: this,
+       duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,48 +82,53 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   
                   // Connection Status Indicator
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: provider.isWsConnected 
-                        ? Colors.green.withOpacity(0.1) 
-                        : Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: provider.isWsConnected 
-                          ? Colors.green.withOpacity(0.3) 
-                          : Colors.red.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: provider.isWsConnected ? Colors.green : Colors.red,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: (provider.isWsConnected ? Colors.green : Colors.red).withOpacity(0.5),
-                                blurRadius: 4,
-                                spreadRadius: 1,
+                  AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: provider.isWsConnected 
+                            ? Colors.green.withOpacity(0.05 + (0.1 * _pulseController.value)) 
+                            : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: provider.isWsConnected 
+                              ? Colors.green.withOpacity(0.2 + (0.3 * _pulseController.value)) 
+                              : Colors.red.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: provider.isWsConnected ? Colors.green : Colors.red,
+                                shape: BoxShape.circle,
+                                boxShadow: provider.isWsConnected ? [
+                                  BoxShadow(
+                                    color: Colors.green.withOpacity(0.4 * _pulseController.value),
+                                    blurRadius: 6,
+                                    spreadRadius: 2,
+                                  ),
+                                ] : [],
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              provider.isWsConnected ? "Server bilan aloqa bor" : "Server bilan aloqa yo'q",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: provider.isWsConnected ? Colors.green : Colors.red,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          provider.isWsConnected ? "Server bilan aloqa bor" : "Server bilan aloqa yo'q",
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: provider.isWsConnected ? Colors.green : Colors.red,
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                   
@@ -329,6 +351,103 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Pending Queue Section (Always visible for professional look)
+                  Row(
+                    children: [
+                      Icon(Icons.pending_actions_rounded, 
+                        color: provider.pendingQueue.isNotEmpty ? Colors.amberAccent : Colors.white24, 
+                        size: 24),
+                      const SizedBox(width: 12),
+                      Text(
+                        "Chop etilmagan vazifalar (${provider.pendingQueue.length})",
+                        style: TextStyle(
+                          fontSize: 20, 
+                          fontWeight: FontWeight.bold, 
+                          color: provider.pendingQueue.isNotEmpty ? Colors.amberAccent : Colors.white24,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  if (provider.pendingQueue.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.02),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          "Hozircha kutayotgan vazifalar yo'q",
+                          style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13),
+                        ),
+                      ),
+                    )
+                  else
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        mainAxisExtent: 80,
+                      ),
+                      itemCount: provider.pendingQueue.length,
+                      itemBuilder: (context, index) {
+                        final job = provider.pendingQueue[index];
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.amberAccent.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.amberAccent.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      job.documentName,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      "${job.copies} nusxa • ${job.uuid.substring(0, 8)}...",
+                                      style: TextStyle(fontSize: 12, color: Colors.white54),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              _smallActionBtn(
+                                icon: Icons.print_rounded,
+                                color: Colors.greenAccent,
+                                onPressed: () => provider.printQueueItem(job),
+                              ),
+                              const SizedBox(width: 8),
+                              _smallActionBtn(
+                                icon: Icons.close_rounded,
+                                color: Colors.redAccent,
+                                onPressed: () => provider.cancelQueueItem(job),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  
+                  const SizedBox(height: 32),
+                  const Divider(color: Colors.white10),
+                  const SizedBox(height: 32),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -372,16 +491,37 @@ class _HomeScreenState extends State<HomeScreen> {
                               separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.white10),
                               itemBuilder: (context, index) {
                                 final log = provider.logs[index];
-                                final isError = log.contains('Error');
+                                final isError = log.contains('Error') || log.contains('Xatolik') || log.contains('Exception') || log.contains('failed');
+                                final isSuccess = log.contains('muvaffaqiyatli') || log.contains('chop etildi');
+                                final isWebSocket = log.contains('WebSocket');
+
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                  child: Text(
-                                    log,
-                                    style: TextStyle(
-                                      fontFamily: 'monospace',
-                                      color: isError ? Colors.redAccent : Colors.white70,
-                                      fontSize: 13,
-                                    ),
+                                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "> ",
+                                        style: TextStyle(color: Colors.white.withOpacity(0.3), fontFamily: 'monospace', fontSize: 13),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          log,
+                                          style: TextStyle(
+                                            fontFamily: 'monospace',
+                                            color: isError 
+                                                ? Colors.redAccent.withOpacity(0.9) 
+                                                : isSuccess 
+                                                    ? Colors.greenAccent.withOpacity(0.8)
+                                                    : isWebSocket
+                                                        ? Colors.blueAccent.withOpacity(0.8)
+                                                        : Colors.white70,
+                                            fontSize: 13,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
@@ -498,6 +638,22 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _smallActionBtn({required IconData icon, required Color color, required VoidCallback onPressed}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: color, size: 18),
+        onPressed: onPressed,
+        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+        padding: EdgeInsets.zero,
+        splashRadius: 18,
+      ),
     );
   }
 
