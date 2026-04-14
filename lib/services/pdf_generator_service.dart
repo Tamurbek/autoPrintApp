@@ -32,12 +32,12 @@ class PdfGeneratorService {
       }
     }
 
-    final String title = data['title'] ?? data['name'] ?? 'Baholar Ro\'yxati';
-    final String subject = data['subject'] ?? data['fan'] ?? '';
-    final String group = data['group'] ?? data['guruh'] ?? '';
-    final String date = data['date'] ?? data['sana'] ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final String teacher = data['teacher'] ?? data['o\'qituvchi'] ?? data['o_qituvchi'] ?? '';
-    final String footerText = data['footer'] ?? data['tasdiq'] ?? "Tasdiqlayman: Baholarni aniq va to'g'ri ko'chirib chiqdim.";
+    final String title = data['title'] ?? data['name'] ?? data['info']?['title'] ?? 'Baholar Ro\'yxati';
+    final String subject = data['subject'] ?? data['fan'] ?? data['info']?['fan'] ?? data['info']?['subject'] ?? '';
+    final String group = data['group'] ?? data['guruh'] ?? data['info']?['guruh'] ?? data['info']?['group'] ?? '';
+    final String date = data['date'] ?? data['sana'] ?? data['info']?['sana'] ?? data['info']?['date'] ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final String teacher = data['teacher'] ?? data['o\'qituvchi'] ?? data['o_qituvchi'] ?? data['info']?['teacher'] ?? data['info']?['o\'qituvchi'] ?? '';
+    final String footerText = data['footer'] ?? data['tasdiq'] ?? data['info']?['footer'] ?? "Tasdiqlayman: Baholarni aniq va to'g'ri ko'chirib chiqdim.";
     
     // Build subtitle strings like in screenshot
     String subtitle = "";
@@ -45,8 +45,11 @@ class PdfGeneratorService {
     if (group.isNotEmpty) subtitle += (subtitle.isEmpty ? "" : " | ") + "Guruh: $group";
 
     String infoLine = "Sana: $date";
-    if (data['total_count'] != null) infoLine += " | Jami: ${data['total_count']} talaba";
-    if (data['graded_count'] != null) infoLine += " | Baholangan: ${data['graded_count']} ta";
+    final dynamic totalCount = data['total_count'] ?? data['count'] ?? data['info']?['total_count'] ?? data['info']?['count'];
+    final dynamic gradedCount = data['graded_count'] ?? data['info']?['graded_count'];
+
+    if (totalCount != null) infoLine += " | Jami: $totalCount talaba";
+    if (gradedCount != null) infoLine += " | Baholangan: $gradedCount ta";
 
     // Dynamic columns or defaults for education
     final List<dynamic> headers = data['headers'] ?? ['#', 'Talaba F.I.Sh.', 'Fan nomi', 'Guruh', 'Baho'];
