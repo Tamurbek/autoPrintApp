@@ -333,8 +333,18 @@ class AppProvider extends ChangeNotifier with TrayListener {
       notifyListeners();
     };
 
-    _printService.startPolling(_settings, onLogCb, _processJob, onPingSuccess: () {
+    _printService.startPolling(_settings, onLogCb, _processJob, onPingSuccess: (result) async {
       _lastPingTime = DateTime.now();
+      
+      if (result != null && result['redirect'] != null) {
+        final newUrl = result['redirect'] as String;
+        final uri = Uri.parse(newUrl);
+        final baseUrl = "${uri.scheme}://${uri.host}${uri.port != 80 && uri.port != 443 ? ":${uri.port}" : ""}";
+        
+        await updateSettings(apiUrl: baseUrl);
+        onLogCb("Tizim avtomatik ravishda yangi server manziliga moslashdi: $baseUrl");
+      }
+      
       notifyListeners();
     });
     _wsService.connect(_settings);
@@ -354,14 +364,27 @@ class AppProvider extends ChangeNotifier with TrayListener {
     _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Qo'lda ping yuborilmoqda...");
     notifyListeners();
     try {
-      await _printService.sendPing(_settings, (msg) {
+      final result = await _printService.sendPing(_settings, (msg) {
         _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping: $msg");
         notifyListeners();
       }, onSuccess: () {
         _lastPingTime = DateTime.now();
         notifyListeners();
       });
-      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping muvaffaqiyatli yuborildi.");
+
+      if (result != null && result['redirect'] != null) {
+        final newUrl = result['redirect'] as String;
+        // Strip out the relative path to get the base URL
+        final uri = Uri.parse(newUrl);
+        final baseUrl = "${uri.scheme}://${uri.host}${uri.port != 80 && uri.port != 443 ? ":${uri.port}" : ""}";
+        
+        await updateSettings(apiUrl: baseUrl);
+        onLogCb("Tizim avtomatik ravishda yangi server manziliga moslashdi: $baseUrl");
+      }
+      
+      if (result != null && result['success'] == true) {
+        _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping muvaffaqiyatli yuborildi.");
+      }
     } catch (e) {
       _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping yuborishda xatolik: $e");
     }

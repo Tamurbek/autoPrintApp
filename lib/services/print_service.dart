@@ -18,17 +18,20 @@ class PrintService {
   Timer? _pingTimer;
   bool _isPolling = false;
 
-  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies, PrintJob job) onPrint, {VoidCallback? onPingSuccess}) {
+  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies, PrintJob job) onPrint, {Function(Map<String, dynamic>?)? onPingSuccess}) {
     _timer?.cancel();
     _pingTimer?.cancel();
     _isPolling = true;
 
     _pingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-      sendPing(settings, onLog, onSuccess: onPingSuccess);
+      final res = await sendPing(settings, onLog, onSuccess: () {});
+      if (res != null) onPingSuccess?.call(res);
     });
 
     // Send initial ping immediately
-    sendPing(settings, onLog, onSuccess: onPingSuccess);
+    sendPing(settings, onLog, onSuccess: () {}).then((res) {
+      if (res != null) onPingSuccess?.call(res);
+    });
 
     // Jobs Polling Timer
     _timer = Timer.periodic(Duration(seconds: settings.pollingInterval), (timer) async {
@@ -131,6 +134,14 @@ class PrintService {
           'last_ping': DateTime.now().toIso8601String(),
         }),
       ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 301 || response.statusCode == 308) {
+        final newLocation = response.headers['location'];
+        if (newLocation != null) {
+          onLog("Server URL manzili o'zgargan (Redirect): $newLocation");
+          return {'redirect': newLocation};
+        }
+      }
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
