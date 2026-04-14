@@ -42,7 +42,7 @@ class WebSocketService {
       
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
       
-      _channel!.ready.then((_) {
+      _channel!.ready.timeout(const Duration(seconds: 20)).then((_) {
         _isConnected = true;
         _retryCount = 0;
         onStatusChange?.call(true);

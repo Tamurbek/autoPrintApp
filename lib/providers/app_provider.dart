@@ -9,6 +9,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:local_notifier/local_notifier.dart';
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -63,7 +64,6 @@ class AppProvider extends ChangeNotifier with TrayListener {
     _initWsService();
     _loadSettings();
     _refreshPrinters();
-    _initTray();
   }
 
   void _initWsService() {
@@ -126,16 +126,15 @@ class AppProvider extends ChangeNotifier with TrayListener {
           await trayManager.setIcon('assets/icon.png');
         }
 
-        
-        // Since we don't have context here yet for localization, we use default strings
-        // or we could refactor to set it later. 
-        // Let's use more generic names or set them once settings are loaded.
+        final context = navigatorKey.currentContext;
+        final openLabel = context != null ? AppLocalizations.of(context)!.open : 'Ochish';
+        final exitLabel = context != null ? AppLocalizations.of(context)!.exit : 'Chiqish';
         
         Menu menu = Menu(
           items: [
-            MenuItem(label: 'Ochish', onClick: (_) => windowManager.show()),
+            MenuItem(label: openLabel, onClick: (_) => windowManager.show()),
             MenuItem.separator(),
-            MenuItem(label: 'Chiqish', onClick: (_) => exit(0)),
+            MenuItem(label: exitLabel, onClick: (_) => exit(0)),
           ],
         );
 
@@ -144,6 +143,16 @@ class AppProvider extends ChangeNotifier with TrayListener {
       } catch (e) {
         debugPrint('Tray initialization error: $e');
       }
+    }
+  }
+
+  void _showNotification(String title, String body) {
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      LocalNotification notification = LocalNotification(
+        title: title,
+        body: body,
+      );
+      notification.show();
     }
   }
 
@@ -178,6 +187,7 @@ class AppProvider extends ChangeNotifier with TrayListener {
     }
     // Check jobs regardless, they will go to queue if autoPrint is off
     _checkForJobsInitially();
+    _initTray(); // Re-init tray to update language
     checkForUpdates();
   }
 
@@ -209,6 +219,9 @@ class AppProvider extends ChangeNotifier with TrayListener {
       job.pdfBytes = data; // We'll need to store bytes in the job model temporarily
       _pendingQueue.add(job);
       _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Yangi vazifa navbatga qo'shildi: ${job.documentName}");
+      
+      _showNotification("Yangi topshiriq", "${job.documentName} navbatga qo'shildi.");
+      
       notifyListeners();
     }
   }
@@ -312,7 +325,10 @@ class AppProvider extends ChangeNotifier with TrayListener {
       await prefs.setBool('startAtBoot', startAtBoot);
       _updateAutoStart();
     }
-    if (locale != null) await prefs.setString('locale', locale);
+    if (locale != null) {
+      await prefs.setString('locale', locale);
+      _initTray(); // Update language in tray menu
+    }
     if (pollingInterval != null) await prefs.setInt('pollingInterval', pollingInterval);
 
     if (_settings.autoPrintEnabled) {
@@ -361,6 +377,11 @@ class AppProvider extends ChangeNotifier with TrayListener {
 
 
   Future<void> manualPing() async {
+    if (isPingActive && _lastPingTime != null) {
+       _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping allaqachon yuborilmoqda...");
+       notifyListeners();
+       return;
+    }
     _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Qo'lda ping yuborilmoqda...");
     notifyListeners();
     try {

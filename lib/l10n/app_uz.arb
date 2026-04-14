@@ -20,6 +20,8 @@
   "checkUpdate": "Yangilanishni tekshirish",
   "noUpdate": "Yangilanish mavjud emas",
   "updateAvailable": "Yangilanish mavjud!",
-  "apiKey": "API Kaliti"
+  "apiKey": "API Kaliti",
+  "open": "Ochish",
+  "exit": "Chiqish"
 }
 

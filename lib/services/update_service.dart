@@ -10,7 +10,10 @@ class UpdateService {
 
   Future<Map<String, dynamic>?> checkUpdate() async {
     try {
-      final dio = Dio();
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+      ));
       final response = await dio.get(
         githubApiUrl,
         options: Options(validateStatus: (status) => status != null && status < 500),
@@ -77,7 +80,10 @@ class UpdateService {
 
   Future<void> downloadAndInstall(String url, Function(double) onProgress) async {
     try {
-      final dio = Dio();
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(minutes: 5), // Longer for download
+      ));
       final tempDir = await getTemporaryDirectory();
       
       // Use unique filename to avoid "Access Denied" errors if previous file is locked

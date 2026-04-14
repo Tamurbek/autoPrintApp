@@ -20,6 +20,8 @@
   "checkUpdate": "Check for Updates",
   "noUpdate": "No update available",
   "updateAvailable": "Update available!",
-  "apiKey": "API Key"
+  "apiKey": "API Key",
+  "open": "Open",
+  "exit": "Exit"
 }
 

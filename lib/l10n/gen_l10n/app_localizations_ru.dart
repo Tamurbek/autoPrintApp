@@ -73,4 +73,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get apiKey => 'API Ключ';
+
+  @override
+  String get open => 'Открыть';
+
+  @override
+  String get exit => 'Выйти';
 }

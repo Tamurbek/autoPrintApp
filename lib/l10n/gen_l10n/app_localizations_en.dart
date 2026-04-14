@@ -73,4 +73,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get apiKey => 'API Key';
+
+  @override
+  String get open => 'Open';
+
+  @override
+  String get exit => 'Exit';
 }

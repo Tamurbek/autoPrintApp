@@ -1,15 +1,15 @@
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:window_manager/window_manager.dart';
-import 'dart:io';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'l10n/gen_l10n/app_localizations.dart';
 import 'providers/app_provider.dart';
 import 'ui/home_screen.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -25,15 +25,33 @@ void main() async {
   HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize Local Notifier
+  await localNotifier.setup(
+    appName: 'AutoPrint Agent',
+    shortcutPolicy: ShortcutPolicy.requireCreate,
+  );
+  
   // Initialize Window Manager
   await windowManager.ensureInitialized();
   
   // Single Instance Check
   try {
     final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 18765);
-    // Keep reference to prevent GC, though in main it's likely fine
+    server.listen((socket) async {
+      // Bring existing instance to front
+      if (await windowManager.isMinimized()) await windowManager.restore();
+      await windowManager.show();
+      await windowManager.focus();
+      socket.destroy();
+    });
   } catch (e) {
-    // Port already in use, so another instance is running
+    // Port already in use, notify existing instance and exit
+    try {
+      final socket = await Socket.connect(InternetAddress.loopbackIPv4, 18765, timeout: const Duration(milliseconds: 500));
+      socket.destroy();
+    } catch (e) {
+      debugPrint("Could not notify existing instance: $e");
+    }
     exit(0);
   }
 
@@ -130,6 +148,12 @@ class AutoPrintApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
           ),
+        ),
+        scrollbarTheme: ScrollbarThemeData(
+          thumbColor: MaterialStateProperty.all(const Color(0xFF6366F1).withOpacity(0.2)),
+          radius: const Radius.circular(8),
+          thickness: MaterialStateProperty.all(6),
+          thumbVisibility: MaterialStateProperty.all(true),
         ),
       ),
       home: const HomeScreen(),

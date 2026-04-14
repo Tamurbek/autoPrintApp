@@ -73,4 +73,10 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get apiKey => 'API Kaliti';
+
+  @override
+  String get open => 'Ochish';
+
+  @override
+  String get exit => 'Chiqish';
 }

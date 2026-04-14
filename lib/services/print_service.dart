@@ -17,15 +17,23 @@ class PrintService {
   Timer? _timer;
   Timer? _pingTimer;
   bool _isPolling = false;
+  bool _isPingInProgress = false;
+  bool _isJobCheckInProgress = false;
 
   void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies, PrintJob job) onPrint, {Function(Map<String, dynamic>?)? onPingSuccess}) {
     _timer?.cancel();
     _pingTimer?.cancel();
     _isPolling = true;
 
-    _pingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-      final res = await sendPing(settings, onLog, onSuccess: () {});
-      if (res != null) onPingSuccess?.call(res);
+    _pingTimer = Timer.periodic(const Duration(seconds: 15), (timer) async {
+      if (_isPingInProgress) return;
+      _isPingInProgress = true;
+      try {
+        final res = await sendPing(settings, onLog, onSuccess: () {});
+        if (res != null) onPingSuccess?.call(res);
+      } finally {
+        _isPingInProgress = false;
+      }
     });
 
     // Send initial ping immediately
@@ -35,11 +43,18 @@ class PrintService {
 
     // Jobs Polling Timer
     _timer = Timer.periodic(Duration(seconds: settings.pollingInterval), (timer) async {
-      checkPendingJobs(settings, onLog, onPrint);
+      if (_isJobCheckInProgress) return;
+      _isJobCheckInProgress = true;
+      try {
+        await checkPendingJobs(settings, onLog, onPrint);
+      } finally {
+        _isJobCheckInProgress = false;
+      }
     });
     
     // Check once immediately on start
-    checkPendingJobs(settings, onLog, onPrint);
+    _isJobCheckInProgress = true;
+    checkPendingJobs(settings, onLog, onPrint).then((_) => _isJobCheckInProgress = false);
   }
 
   Future<void> checkPendingJobs(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies, PrintJob job) onPrint) async {
@@ -52,7 +67,7 @@ class PrintService {
           'X-API-KEY': settings.apiKey,
           'Content-Type': 'application/json',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
       
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -70,10 +85,20 @@ class PrintService {
                 int? pageCount;
 
                 if (job.type == 'html') {
+                  if (Platform.isWindows || Platform.isLinux) {
+                    throw Exception("Windows/Linux tizimlarida HTML-dan chop etish qo'llab-quvvatlanmaydi. Iltimos, serverda 'json' yoki 'pdf' turidan foydalaning.");
+                  }
                   printData = await Printing.convertHtml(
                     html: job.html,
                     format: PdfPageFormat.a4,
                   );
+                } else if (job.type == 'json') {
+                  final Map<String, dynamic> jsonData = jsonDecode(job.html);
+                  final genResponse = await PdfGeneratorService.generateFromJson(jsonData);
+                  printData = genResponse.bytes;
+                  pageCount = genResponse.pageCount;
+                } else if (job.type == 'pdf') {
+                  printData = base64Decode(job.html);
                 }
 
                 if (printData != null) {
@@ -109,7 +134,7 @@ class PrintService {
           'status': status,
           'error': error,
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
     } catch (e) {
       print("Status reporting error: $e");
     }
@@ -133,7 +158,7 @@ class PrintService {
           'status': 'running',
           'last_ping': DateTime.now().toIso8601String(),
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 301 || response.statusCode == 308) {
         final newLocation = response.headers['location'];
