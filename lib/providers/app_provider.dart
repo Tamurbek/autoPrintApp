@@ -193,7 +193,7 @@ class AppProvider extends ChangeNotifier with TrayListener {
     // Check if duplicate
     if (_pendingQueue.any((j) => j.uuid == jobUuid)) return;
 
-    if (_settings.autoPrintEnabled) {
+    if (_settings.autoPrintEnabled && _settings.selectedPrinter != null) {
       try {
         await _printService.printDocument(data, _settings.selectedPrinter, copies: copies);
         _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Hujjat avtomatik chop etildi.");

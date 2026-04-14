@@ -41,32 +41,42 @@ class WebSocketService {
       onLog("WebSocket-ga ulanish: $wsUrl");
       
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
-      _isConnected = true;
-      _retryCount = 0; // Reset on success attempts
-      onStatusChange?.call(true);
       
+      _channel!.ready.then((_) {
+        _isConnected = true;
+        _retryCount = 0;
+        onStatusChange?.call(true);
+      }).catchError((error) {
+        _handleWsError(error, settings);
+      });
+
       _channel!.stream.listen(
         (message) {
           _handleMessage(message);
         },
-        onDone: () {
-          _isConnected = false;
-          onStatusChange?.call(false);
-          onLog("WebSocket aloqasi uzildi.");
-          _retryConnection(settings);
-        },
-        onError: (error) {
-          _isConnected = false;
-          onStatusChange?.call(false);
-          onLog("WebSocket xatosi: $error");
-          _retryConnection(settings);
-        },
+        onDone: () => _handleWsDone(settings),
+        onError: (error) => _handleWsError(error, settings),
+        cancelOnError: true,
       );
     } catch (e) {
-      _isConnected = false;
-      onStatusChange?.call(false);
-      onLog("WebSocket ulanishda xatolik: $e");
-      _retryConnection(settings);
+      _handleWsError(e, settings);
+    }
+  }
+
+  void _handleWsDone(AppSettings settings) {
+    if (!_isConnected) return;
+    _isConnected = false;
+    onStatusChange?.call(false);
+    onLog("WebSocket aloqasi uzildi.");
+    _retryConnection(settings);
+  }
+
+  void _handleWsError(dynamic error, AppSettings settings) {
+    if (_isConnected || _reconnectTimer == null || !_reconnectTimer!.isActive) {
+       _isConnected = false;
+       onStatusChange?.call(false);
+       onLog("WebSocket xatosi: $error");
+       _retryConnection(settings);
     }
   }
 
