@@ -22,14 +22,24 @@ class PdfGeneratorService {
     }
 
     // Attempt to get items using various common keys
-    final List<dynamic> items = data['items'] ?? data['rows'] ?? data['products'] ?? data['list'] ?? data['data'] ?? [];
+    List<dynamic> items = data['items'] ?? data['rows'] ?? data['products'] ?? data['list'] ?? data['data'] ?? data['details'] ?? data['positions'] ?? data['items_list'] ?? [];
     
-    final String title = data['title'] ?? data['store_name'] ?? data['name'] ?? 'Ro\'yxat';
-    final String address = data['address'] ?? data['location'] ?? '';
-    final String date = data['date'] ?? data['created_at'] ?? DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
-    final String total = data['total']?.toString() ?? data['total_sum']?.toString() ?? data['grand_total']?.toString() ?? '0';
-    final String currency = data['currency'] ?? data['unit'] ?? "";
-    final String footer = data['footer'] ?? data['note'] ?? "Ro'yxat yakunlandi";
+    // If items is still empty, search for ANY list in the map
+    if (items.isEmpty) {
+      for (var value in data.values) {
+        if (value is List && value.isNotEmpty) {
+          items = value;
+          break;
+        }
+      }
+    }
+
+    final String title = data['title'] ?? data['store_name'] ?? data['name'] ?? data['header'] ?? data['caption'] ?? 'Ro\'yxat';
+    final String address = data['address'] ?? data['location'] ?? data['branch'] ?? '';
+    final String date = data['date'] ?? data['created_at'] ?? data['datetime'] ?? data['sana'] ?? DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
+    final String total = data['total']?.toString() ?? data['total_sum']?.toString() ?? data['grand_total']?.toString() ?? data['all_total']?.toString() ?? data['jami']?.toString() ?? '0';
+    final String currency = data['currency'] ?? data['unit'] ?? data['valyuta'] ?? "";
+    final String footer = data['footer'] ?? data['note'] ?? data['remark'] ?? data['izoh'] ?? "Ro'yxat yakunlandi";
     
     // Dynamic columns support
     final List<dynamic> headers = data['headers'] ?? [
