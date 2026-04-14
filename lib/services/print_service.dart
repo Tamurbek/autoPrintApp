@@ -116,7 +116,7 @@ class PrintService {
   }
 
   Future<Map<String, dynamic>?> sendPing(AppSettings settings, Function(String) onLog, {VoidCallback? onSuccess}) async {
-    if (settings.apiKey.isEmpty) return;
+    if (settings.apiKey.isEmpty) return null;
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final response = await http.post(
@@ -150,6 +150,7 @@ class PrintService {
           if (body['printer_name'] != null) {
              // onLog("Server recognized printer: ${body['printer_name']}");
           }
+          return body;
         } else {
           onLog("Ping Server Error: ${body['message'] ?? 'Unknown server error'}");
         }
