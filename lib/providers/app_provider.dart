@@ -41,6 +41,7 @@ class AppProvider extends ChangeNotifier with TrayListener {
   double _downloadProgress = 0;
   bool _isDownloading = false;
   bool _isWsConnected = false;
+  DateTime? _lastPingTime;
   Uint8List? _lastPdfBytes;
   final List<PrintJob> _pendingQueue = [];
 
@@ -51,6 +52,10 @@ class AppProvider extends ChangeNotifier with TrayListener {
   double get downloadProgress => _downloadProgress;
   bool get isDownloading => _isDownloading;
   bool get isWsConnected => _isWsConnected;
+  bool get isPingActive {
+    if (_lastPingTime == null) return false;
+    return DateTime.now().difference(_lastPingTime!).inSeconds < 40; // Allow some buffer
+  }
   Uint8List? get lastPdfBytes => _lastPdfBytes;
   List<PrintJob> get pendingQueue => _pendingQueue;
 
@@ -328,8 +333,14 @@ class AppProvider extends ChangeNotifier with TrayListener {
       notifyListeners();
     };
 
-    _printService.startPolling(_settings, onLogCb, _processJob);
+    _printService.startPolling(_settings, onLogCb, _processJob, onPingSuccess: () {
+      _lastPingTime = DateTime.now();
+      notifyListeners();
+    });
     _wsService.connect(_settings);
+    // Periodically send ping in a separate timer or just rely on startPolling's ping
+    // startPolling already has a timer, we just need to pass the onSuccess callback.
+    // Let's modify startPolling to accept it.
   }
 
   void _stopService() {
@@ -345,6 +356,9 @@ class AppProvider extends ChangeNotifier with TrayListener {
     try {
       await _printService.sendPing(_settings, (msg) {
         _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping: $msg");
+        notifyListeners();
+      }, onSuccess: () {
+        _lastPingTime = DateTime.now();
         notifyListeners();
       });
       _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping muvaffaqiyatli yuborildi.");

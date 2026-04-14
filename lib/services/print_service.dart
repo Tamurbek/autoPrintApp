@@ -1,4 +1,5 @@
 
+import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -17,17 +18,17 @@ class PrintService {
   Timer? _pingTimer;
   bool _isPolling = false;
 
-  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies, PrintJob job) onPrint) {
+  void startPolling(AppSettings settings, Function(String) onLog, Function(Uint8List, int?, String jobUuid, int copies, PrintJob job) onPrint, {VoidCallback? onPingSuccess}) {
     _timer?.cancel();
     _pingTimer?.cancel();
     _isPolling = true;
 
     _pingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-      sendPing(settings, onLog);
+      sendPing(settings, onLog, onSuccess: onPingSuccess);
     });
 
     // Send initial ping immediately
-    sendPing(settings, onLog);
+    sendPing(settings, onLog, onSuccess: onPingSuccess);
 
     // Jobs Polling Timer
     _timer = Timer.periodic(Duration(seconds: settings.pollingInterval), (timer) async {
@@ -111,7 +112,7 @@ class PrintService {
     }
   }
 
-  Future<void> sendPing(AppSettings settings, Function(String) onLog) async {
+  Future<void> sendPing(AppSettings settings, Function(String) onLog, {VoidCallback? onSuccess}) async {
     if (settings.apiKey.isEmpty) return;
     try {
       final packageInfo = await PackageInfo.fromPlatform();
@@ -134,7 +135,7 @@ class PrintService {
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         if (body['success'] == true) {
-          // Success
+          onSuccess?.call();
           if (body['printer_name'] != null) {
              // onLog("Server recognized printer: ${body['printer_name']}");
           }

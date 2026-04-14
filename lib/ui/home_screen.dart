@@ -81,21 +81,31 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 16),
                   
-                  // Connection Status Indicator
+                  // Connection Status Indicator (Multi-state)
                   AnimatedBuilder(
                     animation: _pulseController,
                     builder: (context, child) {
+                      final isWs = provider.isWsConnected;
+                      final isPing = provider.isPingActive;
+                      
+                      Color statusColor = Colors.red;
+                      String statusText = "Server bilan aloqa yo'q";
+                      
+                      if (isWs) {
+                        statusColor = Colors.green;
+                        statusText = "Server bilan aloqa bor";
+                      } else if (isPing) {
+                        statusColor = Colors.orange;
+                        statusText = "Aloqa cheklangan (Ping OK)";
+                      }
+
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: provider.isWsConnected 
-                            ? Colors.green.withOpacity(0.05 + (0.1 * _pulseController.value)) 
-                            : Colors.red.withOpacity(0.1),
+                          color: statusColor.withOpacity(0.05 + (0.1 * _pulseController.value)), 
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: provider.isWsConnected 
-                              ? Colors.green.withOpacity(0.2 + (0.3 * _pulseController.value)) 
-                              : Colors.red.withOpacity(0.3),
+                            color: statusColor.withOpacity(0.2 + (0.3 * _pulseController.value)),
                           ),
                         ),
                         child: Row(
@@ -105,24 +115,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: provider.isWsConnected ? Colors.green : Colors.red,
+                                color: statusColor,
                                 shape: BoxShape.circle,
-                                boxShadow: provider.isWsConnected ? [
+                                boxShadow: [
                                   BoxShadow(
-                                    color: Colors.green.withOpacity(0.4 * _pulseController.value),
+                                    color: statusColor.withOpacity(0.4 * _pulseController.value),
                                     blurRadius: 6,
                                     spreadRadius: 2,
                                   ),
-                                ] : [],
+                                ],
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              provider.isWsConnected ? "Server bilan aloqa bor" : "Server bilan aloqa yo'q",
+                              statusText,
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: provider.isWsConnected ? Colors.green : Colors.red,
+                                color: statusColor,
                               ),
                             ),
                           ],
