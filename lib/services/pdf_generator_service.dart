@@ -120,7 +120,7 @@ class PdfGeneratorService {
             pw.SizedBox(height: 20),
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: pw.StartLine != null ? pw.CrossAxisAlignment.start : pw.CrossAxisAlignment.start, // Fix for context
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Expanded(
                   flex: 3,
