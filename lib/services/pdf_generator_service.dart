@@ -12,17 +12,24 @@ class PdfGeneratorResponse {
 }
 
 class PdfGeneratorService {
-  static Future<PdfGeneratorResponse> generateFromJson(Map<String, dynamic> data) async {
+  static Future<PdfGeneratorResponse> generateFromJson(Map<String, dynamic> rawData) async {
     final pdf = pw.Document();
     
-    // Attempt to get items or fallback to empty list
-    final List<dynamic> items = data['items'] ?? [];
-    final String title = data['title'] ?? data['store_name'] ?? 'Ro\'yxat';
-    final String address = data['address'] ?? '';
-    final String date = data['date'] ?? DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
-    final String total = data['total']?.toString() ?? '0';
-    final String currency = data['currency'] ?? "";
-    final String footer = data['footer'] ?? "Ro'yxat yakunlandi";
+    // Check if data is wrapped in a 'data' field
+    Map<String, dynamic> data = rawData;
+    if (rawData.containsKey('data') && rawData['data'] is Map<String, dynamic> && !rawData.containsKey('items')) {
+      data = rawData['data'];
+    }
+
+    // Attempt to get items using various common keys
+    final List<dynamic> items = data['items'] ?? data['rows'] ?? data['products'] ?? data['list'] ?? data['data'] ?? [];
+    
+    final String title = data['title'] ?? data['store_name'] ?? data['name'] ?? 'Ro\'yxat';
+    final String address = data['address'] ?? data['location'] ?? '';
+    final String date = data['date'] ?? data['created_at'] ?? DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
+    final String total = data['total']?.toString() ?? data['total_sum']?.toString() ?? data['grand_total']?.toString() ?? '0';
+    final String currency = data['currency'] ?? data['unit'] ?? "";
+    final String footer = data['footer'] ?? data['note'] ?? "Ro'yxat yakunlandi";
     
     // Dynamic columns support
     final List<dynamic> headers = data['headers'] ?? [
@@ -31,11 +38,18 @@ class PdfGeneratorService {
       data['header_total'] ?? 'Jami'
     ];
     
-    final List<dynamic> keys = data['keys'] ?? [
-      'name',
-      'qty',
-      'total'
-    ];
+    // If keys not provided, try to detect them from the first item
+    List<dynamic> keys = data['keys'] ?? [];
+    if (keys.isEmpty && items.isNotEmpty && items.first is Map) {
+      final Map firstItem = items.first;
+      // Common patterns: name/title/label, qty/count/amount, total/price/sum
+      String nameKey = ['name', 'title', 'label', 'product_name'].firstWhere((k) => firstItem.containsKey(k), orElse: () => firstItem.keys.first.toString());
+      String qtyKey = ['qty', 'count', 'quantity', 'amount', 'soni'].firstWhere((k) => firstItem.containsKey(k), orElse: () => firstItem.keys.length > 1 ? firstItem.keys.elementAt(1).toString() : 'qty');
+      String totalKey = ['total', 'price', 'sum', 'total_price', 'jami'].firstWhere((k) => firstItem.containsKey(k), orElse: () => firstItem.keys.length > 2 ? firstItem.keys.elementAt(2).toString() : 'total');
+      keys = [nameKey, qtyKey, totalKey];
+    } else if (keys.isEmpty) {
+      keys = ['name', 'qty', 'total'];
+    }
 
     pdf.addPage(
       pw.MultiPage(

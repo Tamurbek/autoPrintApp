@@ -92,6 +92,7 @@ class WebSocketService {
   }
 
   void _handleMessage(dynamic message) {
+    onLog("WebSocket xabari: $message");
     try {
       final data = jsonDecode(message);
       if (data['action'] == 'new_job' || data['type'] == 'new_job') {

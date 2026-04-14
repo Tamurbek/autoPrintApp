@@ -70,6 +70,8 @@ class PrintService {
       ).timeout(const Duration(seconds: 30));
       
       if (response.statusCode == 200) {
+        String logBody = response.body.length > 500 ? "${response.body.substring(0, 500)}..." : response.body;
+        onLog("Server javobi (jobs): $logBody");
         final body = jsonDecode(response.body);
         if (body['success'] == true) {
           final List jobsData = body['data'];
@@ -93,7 +95,13 @@ class PrintService {
                     format: PdfPageFormat.a4,
                   );
                 } else if (job.type == 'json') {
-                  final Map<String, dynamic> jsonData = jsonDecode(job.html);
+                  final dynamic decoded = jsonDecode(job.html);
+                  Map<String, dynamic> jsonData;
+                  if (decoded is List) {
+                    jsonData = {'items': decoded};
+                  } else {
+                    jsonData = decoded as Map<String, dynamic>;
+                  }
                   final genResponse = await PdfGeneratorService.generateFromJson(jsonData);
                   printData = genResponse.bytes;
                   pageCount = genResponse.pageCount;
@@ -114,7 +122,8 @@ class PrintService {
           }
         }
       } else if (response.statusCode != 204) {
-        onLog("API Error: ${response.statusCode} - ${response.body}");
+        String logBody = response.body.length > 500 ? "${response.body.substring(0, 500)}..." : response.body;
+        onLog("API Error: ${response.statusCode} - $logBody");
       }
     } catch (e) {
       onLog("Error fetching jobs: $e");
@@ -169,6 +178,8 @@ class PrintService {
       }
 
       if (response.statusCode == 200) {
+        String logBody = response.body.length > 500 ? "${response.body.substring(0, 500)}..." : response.body;
+        onLog("Server javobi (ping): $logBody");
         final body = jsonDecode(response.body);
         if (body['success'] == true) {
           onSuccess?.call();
@@ -180,7 +191,8 @@ class PrintService {
           onLog("Ping Server Error: ${body['message'] ?? 'Unknown server error'}");
         }
       } else {
-        onLog("Ping HTTP Error: ${response.statusCode} - ${response.body}");
+        String logBody = response.body.length > 500 ? "${response.body.substring(0, 500)}..." : response.body;
+        onLog("Ping HTTP Error: ${response.statusCode} - $logBody");
       }
     } catch (e) {
       onLog("Ping Exception: $e");
