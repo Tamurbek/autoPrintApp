@@ -31,12 +31,14 @@ class AppProvider extends ChangeNotifier {
 
   final PrintService _printService = PrintService();
   final UpdateService _updateService = UpdateService();
+  late final WebSocketService _wsService;
   final List<String> _logs = [];
   List<Printer> _availablePrinters = [];
   
   Map<String, dynamic>? _updateData;
   double _downloadProgress = 0;
   bool _isDownloading = false;
+  bool _isWsConnected = false;
   Uint8List? _lastPdfBytes;
 
   AppSettings get settings => _settings;
@@ -45,12 +47,62 @@ class AppProvider extends ChangeNotifier {
   Map<String, dynamic>? get updateData => _updateData;
   double get downloadProgress => _downloadProgress;
   bool get isDownloading => _isDownloading;
+  bool get isWsConnected => _isWsConnected;
   Uint8List? get lastPdfBytes => _lastPdfBytes;
 
   AppProvider() {
+    _initWsService();
     _loadSettings();
     _refreshPrinters();
     _initTray();
+  }
+
+  void _initWsService() {
+    // Polling callback
+    final onLogCb = (String msg) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: $msg");
+      if (_logs.length > 100) _logs.removeLast();
+      notifyListeners();
+    };
+
+    final onPrintCb = (Uint8List data, int? pageCount, String jobUuid, int copies) async {
+      _lastPdfBytes = data;
+      notifyListeners();
+      
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        bool confirmed = true;
+        if (!_settings.autoPrintEnabled) {
+          confirmed = await PrintConfirmationDialog.show(context, pageCount) ?? false;
+        }
+
+        if (confirmed) {
+          try {
+            await _printService.printDocument(data, _settings.selectedPrinter, copies: copies);
+            onLogCb("Hujjat chop etildi ($copies nusxa).");
+            await _printService.reportStatus(_settings, jobUuid, 'completed');
+          } catch (e) {
+            onLogCb("Xatolik: $e");
+            await _printService.reportStatus(_settings, jobUuid, 'failed', error: e.toString());
+          }
+        } else {
+          onLogCb("Chop etish bekor qilindi.");
+        }
+        notifyListeners();
+      }
+    };
+
+    _wsService = WebSocketService(
+      onLog: onLogCb,
+      onNewJob: () {
+        onLogCb("WebSocket: Yangi topshiriq xabari olindi.");
+        _printService.checkPendingJobs(_settings, onLogCb, onPrintCb);
+      },
+      onStatusChange: (status) {
+        _isWsConnected = status;
+        notifyListeners();
+      },
+    );
   }
 
   Future<void> _initTray() async {
@@ -80,8 +132,9 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    String apiUrl = prefs.getString('apiUrl') ?? "http://10.42.0.255";
     _settings = AppSettings(
-      apiUrl: prefs.getString('apiUrl') ?? "http://10.42.0.255",
+      apiUrl: _normalizeUrl(apiUrl),
       apiKey: prefs.getString('apiKey') ?? "cd8d7cd62ea64c5aa5cac6b48ed12e3f",
 
       selectedPrinter: prefs.getString('selectedPrinter'),
@@ -155,8 +208,10 @@ class AppProvider extends ChangeNotifier {
     String? locale,
     int? pollingInterval,
   }) async {
+    final normalizedApiUrl = apiUrl != null ? _normalizeUrl(apiUrl) : null;
+
     _settings = _settings.copyWith(
-      apiUrl: apiUrl,
+      apiUrl: normalizedApiUrl,
       apiKey: apiKey,
       selectedPrinter: selectedPrinter,
       autoPrintEnabled: autoPrintEnabled,
@@ -166,7 +221,7 @@ class AppProvider extends ChangeNotifier {
     );
 
     final prefs = await SharedPreferences.getInstance();
-    if (apiUrl != null) await prefs.setString('apiUrl', apiUrl);
+    if (normalizedApiUrl != null) await prefs.setString('apiUrl', normalizedApiUrl);
     if (apiKey != null) await prefs.setString('apiKey', apiKey);
     if (selectedPrinter != null) await prefs.setString('selectedPrinter', selectedPrinter);
     if (autoPrintEnabled != null) await prefs.setBool('autoPrintEnabled', autoPrintEnabled);
@@ -187,10 +242,8 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  late final WebSocketService _wsService;
-
   void _startService() {
-    // Polling callback
+    // Polling parameters
     final onLogCb = (String msg) {
       _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: $msg");
       if (_logs.length > 100) _logs.removeLast();
@@ -225,15 +278,6 @@ class AppProvider extends ChangeNotifier {
     };
 
     _printService.startPolling(_settings, onLogCb, onPrintCb);
-
-    // WebSocket initialization
-    _wsService = WebSocketService(
-      onLog: onLogCb,
-      onNewJob: () {
-        onLogCb("WebSocket: Yangi topshiriq xabari olindi.");
-        _printService.checkPendingJobs(_settings, onLogCb, onPrintCb);
-      },
-    );
     _wsService.connect(_settings);
   }
 
@@ -243,6 +287,21 @@ class AppProvider extends ChangeNotifier {
   }
 
 
+
+  Future<void> manualPing() async {
+    _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Qo'lda ping yuborilmoqda...");
+    notifyListeners();
+    try {
+      await _printService.sendPing(_settings, (msg) {
+        _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping: $msg");
+        notifyListeners();
+      });
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping muvaffaqiyatli yuborildi.");
+    } catch (e) {
+      _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Ping yuborishda xatolik: $e");
+    }
+    notifyListeners();
+  }
 
   Future<void> _refreshPrinters() async {
     _availablePrinters = await _printService.getPrinters();
@@ -365,5 +424,15 @@ class AppProvider extends ChangeNotifier {
         await LaunchAtStartup.instance.disable();
       }
     }
+  }
+
+  String _normalizeUrl(String url) {
+    url = url.trim();
+    if (url.endsWith('/')) url = url.substring(0, url.length - 1);
+    final apiIndex = url.indexOf('/api/external');
+    if (apiIndex != -1) {
+      url = url.substring(0, apiIndex);
+    }
+    return url;
   }
 }

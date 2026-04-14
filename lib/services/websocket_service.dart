@@ -11,20 +11,37 @@ class WebSocketService {
   
   final Function(String) onLog;
   final Function() onNewJob;
+  final Function(bool)? onStatusChange;
 
-  WebSocketService({required this.onLog, required this.onNewJob});
+  WebSocketService({required this.onLog, required this.onNewJob, this.onStatusChange});
 
   void connect(AppSettings settings) {
     if (_isConnected) return;
     
-    final baseUrl = settings.apiUrl.replaceFirst('http', 'ws');
-    final wsUrl = "$baseUrl/ws/external/printers?apiKey=${settings.apiKey}";
-    
-    onLog("WebSocket-ga ulanish: $wsUrl");
-    
     try {
+      final uri = Uri.parse(settings.apiUrl);
+      
+      // Ensure we don't have double paths if apiUrl already has a part of API path
+      String path = uri.path;
+      if (path.contains('/api/external')) {
+        path = path.substring(0, path.indexOf('/api/external'));
+      }
+      if (path.endsWith('/')) {
+        path = path.substring(0, path.length - 1);
+      }
+      
+      final wsUri = uri.replace(
+        scheme: uri.scheme == 'https' ? 'wss' : 'ws',
+        path: '$path/ws/external/printers',
+        queryParameters: {'apiKey': settings.apiKey},
+      );
+      
+      final wsUrl = wsUri.toString();
+      onLog("WebSocket-ga ulanish: $wsUrl");
+      
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
       _isConnected = true;
+      onStatusChange?.call(true);
       
       _channel!.stream.listen(
         (message) {
@@ -32,16 +49,20 @@ class WebSocketService {
         },
         onDone: () {
           _isConnected = false;
+          onStatusChange?.call(false);
           onLog("WebSocket aloqasi uzildi.");
           _retryConnection(settings);
         },
         onError: (error) {
           _isConnected = false;
+          onStatusChange?.call(false);
           onLog("WebSocket xatosi: $error");
           _retryConnection(settings);
         },
       );
     } catch (e) {
+      _isConnected = false;
+      onStatusChange?.call(false);
       onLog("WebSocket ulanishda xatolik: $e");
       _retryConnection(settings);
     }
@@ -70,6 +91,7 @@ class WebSocketService {
 
   void disconnect() {
     _isConnected = false;
+    onStatusChange?.call(false);
     _reconnectTimer?.cancel();
     _channel?.sink.close();
   }

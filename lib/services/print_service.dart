@@ -22,12 +22,12 @@ class PrintService {
     _pingTimer?.cancel();
     _isPolling = true;
 
-    _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
-      _sendPing(settings, onLog);
+    _pingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      sendPing(settings, onLog);
     });
 
     // Send initial ping immediately
-    _sendPing(settings, onLog);
+    sendPing(settings, onLog);
 
     // Jobs Polling Timer
     _timer = Timer.periodic(Duration(seconds: settings.pollingInterval), (timer) async {
@@ -111,11 +111,11 @@ class PrintService {
     }
   }
 
-  Future<void> _sendPing(AppSettings settings, Function(String) onLog) async {
-    if (!_isPolling || !settings.autoPrintEnabled || settings.apiKey.isEmpty) return;
+  Future<void> sendPing(AppSettings settings, Function(String) onLog) async {
+    if (settings.apiKey.isEmpty) return;
     try {
       final packageInfo = await PackageInfo.fromPlatform();
-      await http.post(
+      final response = await http.post(
         Uri.parse("${settings.apiUrl}/api/external/printers/ping"),
         headers: {
           'X-API-KEY': settings.apiKey,
@@ -130,8 +130,22 @@ class PrintService {
           'last_ping': DateTime.now().toIso8601String(),
         }),
       );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          // Success
+          if (body['printer_name'] != null) {
+             // onLog("Server recognized printer: ${body['printer_name']}");
+          }
+        } else {
+          onLog("Ping Server Error: ${body['message'] ?? 'Unknown server error'}");
+        }
+      } else {
+        onLog("Ping HTTP Error: ${response.statusCode} - ${response.body}");
+      }
     } catch (e) {
-      // Ignore ping errors
+      onLog("Ping Exception: $e");
     }
   }
 

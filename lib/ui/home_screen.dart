@@ -62,7 +62,53 @@ class _HomeScreenState extends State<HomeScreen> {
                     l10n.windowsPosPrinting,
                     style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+                  
+                  // Connection Status Indicator
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: provider.isWsConnected 
+                        ? Colors.green.withOpacity(0.1) 
+                        : Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: provider.isWsConnected 
+                          ? Colors.green.withOpacity(0.3) 
+                          : Colors.red.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: provider.isWsConnected ? Colors.green : Colors.red,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: (provider.isWsConnected ? Colors.green : Colors.red).withOpacity(0.5),
+                                blurRadius: 4,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          provider.isWsConnected ? "Server bilan aloqa bor" : "Server bilan aloqa yo'q",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: provider.isWsConnected ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   
                   // Language Selection (Always visible)
                   Row(
@@ -83,12 +129,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     _settingsCard(
                       child: Column(
                         children: [
-                          _textField(
-                            label: "API URL",
-                            initialValue: settings.apiUrl,
-                            hint: 'https://api.example.com',
-                            icon: Icons.link_rounded,
-                            onChanged: (val) => provider.updateSettings(apiUrl: val),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _textField(
+                                  label: "API URL",
+                                  initialValue: settings.apiUrl,
+                                  hint: 'https://api.example.com',
+                                  icon: Icons.link_rounded,
+                                  onChanged: (val) => provider.updateSettings(apiUrl: val),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 22),
+                                child: _actionBtn(
+                                  label: "Ping",
+                                  icon: Icons.sensors_rounded,
+                                  color: Colors.green,
+                                  onPressed: provider.manualPing,
+                                ),
+                              ),
+                            ],
                           ),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
