@@ -22,7 +22,7 @@ import '../main.dart';
 import '../services/pdf_generator_service.dart';
 import '../services/websocket_service.dart';
 
-class AppProvider extends ChangeNotifier {
+class AppProvider extends ChangeNotifier with TrayListener {
 
   AppSettings _settings = AppSettings(
     apiUrl: "http://10.42.0.255", 
@@ -115,19 +115,35 @@ class AppProvider extends ChangeNotifier {
         }
 
         
+        // Since we don't have context here yet for localization, we use default strings
+        // or we could refactor to set it later. 
+        // Let's use more generic names or set them once settings are loaded.
+        
         Menu menu = Menu(
           items: [
-            MenuItem(label: 'Open', onClick: (_) => windowManager.show()),
+            MenuItem(label: 'Ochish', onClick: (_) => windowManager.show()),
             MenuItem.separator(),
-            MenuItem(label: 'Exit', onClick: (_) => exit(0)),
+            MenuItem(label: 'Chiqish', onClick: (_) => exit(0)),
           ],
         );
 
         await trayManager.setContextMenu(menu);
+        trayManager.addListener(this);
       } catch (e) {
         debugPrint('Tray initialization error: $e');
       }
     }
+  }
+
+  @override
+  void onTrayIconMouseDown() {
+    windowManager.show();
+    windowManager.focus();
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    trayManager.popUpContextMenu();
   }
 
   Future<void> _loadSettings() async {
@@ -154,14 +170,11 @@ class AppProvider extends ChangeNotifier {
   Future<void> checkForUpdates() async {
     final update = await _updateService.checkUpdate();
     if (update != null) {
-      final packageInfo = await PackageInfo.fromPlatform();
-      if (update['version'] != packageInfo.version) {
-        _updateData = update;
-        notifyListeners();
-      } else {
-        _updateData = null;
-        notifyListeners();
-      }
+      _updateData = update;
+      notifyListeners();
+    } else {
+      _updateData = null;
+      notifyListeners();
     }
   }
 

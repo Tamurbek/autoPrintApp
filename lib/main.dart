@@ -19,9 +19,14 @@ void main() async {
   // Initialize Window Manager
   await windowManager.ensureInitialized();
   
-  // Single Instance Check (Simple approach)
-  // In a real production app, use a plugin like 'local_auth' or 'unique_identifier' 
-  // or a socket based approach. For now, let's keep it simple.
+  // Single Instance Check
+  try {
+    final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 18765);
+    // Keep reference to prevent GC, though in main it's likely fine
+  } catch (e) {
+    // Port already in use, so another instance is running
+    exit(0);
+  }
 
   // Initialize Package Info
   PackageInfo packageInfo = await PackageInfo.fromPlatform();

@@ -304,6 +304,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     isFullWidth: true,
                   ),
 
+                  const SizedBox(height: 32),
+                  const Divider(color: Colors.white10),
+                  const SizedBox(height: 16),
+                  _actionBtn(
+                    label: "Dasturdan chiqish",
+                    icon: Icons.power_settings_new_rounded,
+                    color: Colors.redAccent,
+                    onPressed: () => exit(0),
+                    isFullWidth: true,
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
