@@ -21,10 +21,8 @@ class PdfGeneratorService {
       data = rawData['data'];
     }
 
-    // Attempt to get items using various common keys
-    List<dynamic> items = data['items'] ?? data['rows'] ?? data['products'] ?? data['list'] ?? data['data'] ?? data['details'] ?? data['positions'] ?? data['items_list'] ?? [];
-    
-    // If items is still empty, search for ANY list in the map
+    // Advanced item detection
+    List<dynamic> items = data['items'] ?? data['rows'] ?? data['products'] ?? data['list'] ?? data['data'] ?? data['details'] ?? data['positions'] ?? data['items_list'] ?? data['students'] ?? [];
     if (items.isEmpty) {
       for (var value in data.values) {
         if (value is List && value.isNotEmpty) {
@@ -34,168 +32,127 @@ class PdfGeneratorService {
       }
     }
 
-    final String title = data['title'] ?? data['store_name'] ?? data['name'] ?? data['header'] ?? data['caption'] ?? 'Ro\'yxat';
-    final String address = data['address'] ?? data['location'] ?? data['branch'] ?? '';
-    final String date = data['date'] ?? data['created_at'] ?? data['datetime'] ?? data['sana'] ?? DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
-    final String total = data['total']?.toString() ?? data['total_sum']?.toString() ?? data['grand_total']?.toString() ?? data['all_total']?.toString() ?? data['jami']?.toString() ?? '0';
-    final String currency = data['currency'] ?? data['unit'] ?? data['valyuta'] ?? "";
-    final String footer = data['footer'] ?? data['note'] ?? data['remark'] ?? data['izoh'] ?? "Ro'yxat yakunlandi";
+    final String title = data['title'] ?? data['name'] ?? 'Baholar Ro\'yxati';
+    final String subject = data['subject'] ?? data['fan'] ?? '';
+    final String group = data['group'] ?? data['guruh'] ?? '';
+    final String date = data['date'] ?? data['sana'] ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final String teacher = data['teacher'] ?? data['o\'qituvchi'] ?? data['o_qituvchi'] ?? '';
+    final String footerText = data['footer'] ?? data['tasdiq'] ?? "Tasdiqlayman: Baholarni aniq va to'g'ri ko'chirib chiqdim.";
     
-    // Dynamic columns support
-    final List<dynamic> headers = data['headers'] ?? [
-      data['header_name'] ?? 'Nomi',
-      data['header_qty'] ?? 'Soni',
-      data['header_total'] ?? 'Jami'
-    ];
-    
-    // If keys not provided, try to detect them from the first item
-    List<dynamic> keys = data['keys'] ?? [];
-    if (keys.isEmpty && items.isNotEmpty && items.first is Map) {
-      final Map firstItem = items.first;
-      // Common patterns: name/title/label, qty/count/amount, total/price/sum
-      String nameKey = ['name', 'title', 'label', 'product_name'].firstWhere((k) => firstItem.containsKey(k), orElse: () => firstItem.keys.first.toString());
-      String qtyKey = ['qty', 'count', 'quantity', 'amount', 'soni'].firstWhere((k) => firstItem.containsKey(k), orElse: () => firstItem.keys.length > 1 ? firstItem.keys.elementAt(1).toString() : 'qty');
-      String totalKey = ['total', 'price', 'sum', 'total_price', 'jami'].firstWhere((k) => firstItem.containsKey(k), orElse: () => firstItem.keys.length > 2 ? firstItem.keys.elementAt(2).toString() : 'total');
-      keys = [nameKey, qtyKey, totalKey];
-    } else if (keys.isEmpty) {
-      keys = ['name', 'qty', 'total'];
-    }
+    // Build subtitle strings like in screenshot
+    String subtitle = "";
+    if (subject.isNotEmpty) subtitle += "Fan: $subject";
+    if (group.isNotEmpty) subtitle += (subtitle.isEmpty ? "" : " | ") + "Guruh: $group";
+
+    String infoLine = "Sana: $date";
+    if (data['total_count'] != null) infoLine += " | Jami: ${data['total_count']} talaba";
+    if (data['graded_count'] != null) infoLine += " | Baholangan: ${data['graded_count']} ta";
+
+    // Dynamic columns or defaults for education
+    final List<dynamic> headers = data['headers'] ?? ['#', 'Talaba F.I.Sh.', 'Fan nomi', 'Guruh', 'Baho'];
+    final List<dynamic> keys = data['keys'] ?? ['id', 'fullname', 'subject_name', 'group_name', 'grade'];
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(35),
-        header: (context) => pw.Container(
-          alignment: pw.Alignment.centerRight,
-          margin: const pw.EdgeInsets.only(bottom: 10),
-          child: pw.Text(
-            'Bet ${context.pageNumber} / ${context.pagesCount}',
-            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey),
-          ),
-        ),
+        margin: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 40),
         build: (pw.Context context) {
           return [
-            pw.Header(
-              level: 0,
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            // Center Header
+            pw.Center(
+              child: pw.Column(
                 children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(title, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 20)),
-                      if (address.isNotEmpty) pw.Text(address, style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text("Sana: $date", style: const pw.TextStyle(fontSize: 10)),
-                    ],
-                  ),
-                  pw.Container(
-                    width: 60,
-                    height: 60,
-                    child: pw.Placeholder(), // Optional space for logo
-                  ),
+                   pw.Text(title, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18)),
+                   pw.SizedBox(height: 6),
+                   if (subtitle.isNotEmpty) pw.Text(subtitle, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                   pw.SizedBox(height: 4),
+                   pw.Text(infoLine, style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
                 ],
               ),
             ),
             pw.SizedBox(height: 20),
-            // Table Header with Border
-            pw.Container(
-              decoration: const pw.BoxDecoration(
-                border: pw.Border(bottom: pw.BorderSide(width: 1.5)),
-              ),
-              padding: const pw.EdgeInsets.only(bottom: 5),
-              child: pw.Row(
-                children: headers.asMap().entries.map((entry) {
-                  final int idx = entry.key;
-                  final String h = entry.value.toString();
-                  return pw.Expanded(
-                    flex: idx == 0 ? 3 : 1,
-                    child: pw.Text(
-                      h.toUpperCase(), 
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
-                      textAlign: idx == 0 ? pw.TextAlign.left : pw.TextAlign.right,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            // Items with light borders
-            ...items.map((item) {
-              return pw.Container(
-                decoration: const pw.BoxDecoration(
-                  border: pw.Border(bottom: pw.BorderSide(width: 0.5, color: PdfColors.grey300)),
-                ),
-                padding: const pw.EdgeInsets.symmetric(vertical: 8),
-                child: pw.Row(
-                  children: keys.asMap().entries.map((entry) {
-                    final int idx = entry.key;
-                    final String k = entry.value.toString();
-                    final String val = item[k]?.toString() ?? '';
-                    return pw.Expanded(
-                      flex: idx == 0 ? 3 : 1,
-                      child: pw.Text(
-                        val, 
-                        style: const pw.TextStyle(fontSize: 10),
-                        textAlign: idx == 0 ? pw.TextAlign.left : pw.TextAlign.right,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              );
-            }).toList(),
-            pw.SizedBox(height: 20),
-            // Summary
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.end,
+            
+            // Table
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+              columnWidths: {
+                0: const pw.FixedColumnWidth(30),
+                1: const pw.FlexColumnWidth(3),
+                2: const pw.FlexColumnWidth(2),
+                3: const pw.FlexColumnWidth(1.5),
+                4: const pw.FixedColumnWidth(50),
+              },
               children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
-                  children: [
-                    pw.Text("JAMI: $total $currency", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
-                    pw.SizedBox(height: 4),
-                    pw.Container(width: 150, height: 1, color: PdfColors.black),
-                  ],
+                // Table Header
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                  children: headers.map((h) => pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(h.toString(), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9), textAlign: pw.TextAlign.center),
+                  )).toList(),
+                ),
+                // Table Rows
+                ...items.asMap().entries.map((entry) {
+                  final int index = entry.key;
+                  final dynamic item = entry.value;
+                  return pw.TableRow(
+                    children: keys.map((k) {
+                      String val = "";
+                      if (k == 'id' || k == '#') {
+                        val = (index + 1).toString();
+                      } else if (item is Map) {
+                        val = item[k]?.toString() ?? "";
+                      }
+                      return pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: pw.Text(val, style: const pw.TextStyle(fontSize: 9), textAlign: (k == 'grade' || k == 'id' || k == '#') ? pw.TextAlign.center : pw.TextAlign.left),
+                      );
+                    }).toList(),
+                  );
+                }),
+              ],
+            ),
+            
+            pw.SizedBox(height: 40),
+            
+            // Footer section
+            pw.Divider(thickness: 1.5),
+            pw.SizedBox(height: 20),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.StartLine != null ? pw.CrossAxisAlignment.start : pw.CrossAxisAlignment.start, // Fix for context
+              children: [
+                pw.Expanded(
+                  flex: 3,
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(footerText, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                      pw.SizedBox(height: 15),
+                      pw.Row(
+                        children: [
+                          pw.Text("Imzo: ", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                          pw.Container(width: 150, decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide()))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                pw.Expanded(
+                  flex: 2,
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text("Sana: $date", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                      pw.SizedBox(height: 15),
+                      pw.Text(teacher.toUpperCase(), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                    ],
+                  ),
                 ),
               ],
             ),
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(top: 50),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Container(
-                        width: 150, 
-                        decoration: const pw.BoxDecoration(
-                          border: pw.Border(top: pw.BorderSide())
-                        ),
-                      ),
-                      pw.SizedBox(height: 4),
-                      pw.Text("Mas'ul shaxs imzosi", style: const pw.TextStyle(fontSize: 10)),
-                    ],
-                  ),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text("M.O'.", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
-                      pw.SizedBox(height: 4),
-                      pw.Text("(Muhr uchun joy)", style: const pw.TextStyle(fontSize: 8)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ];
         },
-        footer: (context) => pw.Container(
-          alignment: pw.Alignment.center,
-          margin: const pw.EdgeInsets.only(top: 10),
-          child: pw.Text(
-            footer,
-            style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 8, color: PdfColors.grey700),
-          ),
-        ),
       ),
     );
 
