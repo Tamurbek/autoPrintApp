@@ -355,8 +355,10 @@ class AppProvider extends ChangeNotifier with TrayListener {
       if (result != null && result['redirect'] != null) {
         final newUrl = result['redirect'] as String;
         final uri = Uri.parse(newUrl);
-        final baseUrl = "${uri.scheme}://${uri.host}${uri.port != 80 && uri.port != 443 ? ":${uri.port}" : ""}";
-        
+        String baseUrl = "${uri.scheme}://${uri.host}";
+        if (uri.port != 0 && uri.port != 80 && uri.port != 443) {
+          baseUrl += ":${uri.port}";
+        }
         await updateSettings(apiUrl: baseUrl);
         onLogCb("Tizim avtomatik ravishda yangi server manziliga moslashdi: $baseUrl");
       }
@@ -397,8 +399,10 @@ class AppProvider extends ChangeNotifier with TrayListener {
         final newUrl = result['redirect'] as String;
         // Strip out the relative path to get the base URL
         final uri = Uri.parse(newUrl);
-        final baseUrl = "${uri.scheme}://${uri.host}${uri.port != 80 && uri.port != 443 ? ":${uri.port}" : ""}";
-        
+        String baseUrl = "${uri.scheme}://${uri.host}";
+        if (uri.port != 0 && uri.port != 80 && uri.port != 443) {
+          baseUrl += ":${uri.port}";
+        }
         await updateSettings(apiUrl: baseUrl);
         _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Tizim avtomatik ravishda yangi server manziliga moslashdi: $baseUrl");
       }

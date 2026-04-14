@@ -17,27 +17,38 @@ class WebSocketService {
   WebSocketService({required this.onLog, required this.onNewJob, this.onStatusChange});
 
   void connect(AppSettings settings) {
-    if (_isConnected) return;
+    final uri = Uri.parse(settings.apiUrl);
+    
+    // Ensure we don't have double paths if apiUrl already has a part of API path
+    String path = uri.path;
+    if (path.contains('/api/external')) {
+      path = path.substring(0, path.indexOf('/api/external'));
+    }
+    if (path.endsWith('/')) {
+      path = path.substring(0, path.length - 1);
+    }
+    
+    final wsUri = uri.replace(
+      scheme: uri.scheme == 'https' ? 'wss' : 'ws',
+      path: '$path/ws/external/printers',
+      queryParameters: {'apiKey': settings.apiKey},
+    );
+    
+    final wsUrl = wsUri.toString();
+
+    // If already connected to the SAME URL, do nothing
+    if (_isConnected && _channel != null) {
+      // We don't have a direct way to see the current channel's URL easily with web_socket_channel
+      // but we can track the last used URL.
+      return; 
+    }
+
+    // Force disconnect if attempting to connect to a different URL or re-establishing
+    if (_channel != null) {
+      disconnect();
+    }
     
     try {
-      final uri = Uri.parse(settings.apiUrl);
-      
-      // Ensure we don't have double paths if apiUrl already has a part of API path
-      String path = uri.path;
-      if (path.contains('/api/external')) {
-        path = path.substring(0, path.indexOf('/api/external'));
-      }
-      if (path.endsWith('/')) {
-        path = path.substring(0, path.length - 1);
-      }
-      
-      final wsUri = uri.replace(
-        scheme: uri.scheme == 'https' ? 'wss' : 'ws',
-        path: '$path/ws/external/printers',
-        queryParameters: {'apiKey': settings.apiKey},
-      );
-      
-      final wsUrl = wsUri.toString();
       onLog("WebSocket-ga ulanish: $wsUrl");
       
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
