@@ -379,7 +379,7 @@ class AppProvider extends ChangeNotifier with TrayListener {
         final baseUrl = "${uri.scheme}://${uri.host}${uri.port != 80 && uri.port != 443 ? ":${uri.port}" : ""}";
         
         await updateSettings(apiUrl: baseUrl);
-        onLogCb("Tizim avtomatik ravishda yangi server manziliga moslashdi: $baseUrl");
+        _logs.insert(0, "${DateTime.now().toString().split('.')[0]}: Tizim avtomatik ravishda yangi server manziliga moslashdi: $baseUrl");
       }
       
       if (result != null && result['success'] == true) {

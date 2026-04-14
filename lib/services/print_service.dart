@@ -115,7 +115,7 @@ class PrintService {
     }
   }
 
-  Future<void> sendPing(AppSettings settings, Function(String) onLog, {VoidCallback? onSuccess}) async {
+  Future<Map<String, dynamic>?> sendPing(AppSettings settings, Function(String) onLog, {VoidCallback? onSuccess}) async {
     if (settings.apiKey.isEmpty) return;
     try {
       final packageInfo = await PackageInfo.fromPlatform();
@@ -159,6 +159,7 @@ class PrintService {
     } catch (e) {
       onLog("Ping Exception: $e");
     }
+    return null;
   }
 
 
