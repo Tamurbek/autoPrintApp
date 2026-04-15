@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:printing/printing.dart';
 import '../l10n/gen_l10n/app_localizations.dart';
 import '../providers/app_provider.dart';
 import '../models/print_job.dart';
@@ -34,8 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
-    final settings = provider.settings;
+    final provider = context.read<AppProvider>();
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -77,80 +78,90 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 8),
                   Text(
                     l10n.windowsPosPrinting,
-                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
                   ),
                   const SizedBox(height: 16),
                   
                   // Connection Status Indicator (Multi-state)
-                  AnimatedBuilder(
-                    animation: _pulseController,
-                    builder: (context, child) {
-                      final isWs = provider.isWsConnected;
-                      final isPing = provider.isPingActive;
+                  Selector<AppProvider, (bool, bool)>(
+                    selector: (_, p) => (p.isWsConnected, p.isPingActive),
+                    builder: (context, status, child) {
+                      final isWs = status.$1;
+                      final isPing = status.$2;
                       
-                      Color statusColor = Colors.red;
-                      String statusText = "Server bilan aloqa yo'q";
-                      
-                      if (isWs) {
-                        statusColor = Colors.green;
-                        statusText = "Server bilan aloqa bor";
-                      } else if (isPing) {
-                        statusColor = Colors.orange;
-                        statusText = "Aloqa cheklangan (Ping OK)";
-                      }
+                      return AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, child) {
+                          Color statusColor = Colors.red;
+                          String statusText = "Server bilan aloqa yo'q";
+                          
+                          if (isWs) {
+                            statusColor = Colors.green;
+                            statusText = "Server bilan aloqa bor";
+                          } else if (isPing) {
+                            statusColor = Colors.orange;
+                            statusText = "Aloqa cheklangan (Ping OK)";
+                          }
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.05 + (0.1 * _pulseController.value)), 
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: statusColor.withOpacity(0.2 + (0.3 * _pulseController.value)),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: statusColor,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: statusColor.withOpacity(0.4 * _pulseController.value),
-                                    blurRadius: 6,
-                                    spreadRadius: 2,
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.05 + (0.1 * _pulseController.value)), 
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: statusColor.withValues(alpha: 0.2 + (0.3 * _pulseController.value)),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: statusColor,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: statusColor.withValues(alpha: 0.4 * _pulseController.value),
+                                        blurRadius: 6,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  statusText,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: statusColor,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              statusText,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: statusColor,
-                              ),
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       );
                     },
                   ),
                   const SizedBox(height: 16),
                   
                   // Language Selection (Always visible)
-                  Row(
-                    children: [
-                      _langBtn(context, provider, '🇺🇿', 'uz'),
-                      const SizedBox(width: 8),
-                      _langBtn(context, provider, '🇷🇺', 'ru'),
-                      const SizedBox(width: 8),
-                      _langBtn(context, provider, '🇺🇸', 'en'),
-                    ],
+                  Selector<AppProvider, String>(
+                    selector: (_, p) => p.settings.locale,
+                    builder: (context, locale, child) {
+                      return Row(
+                        children: [
+                          _langBtn(context, provider, '🇺🇿', 'uz'),
+                          const SizedBox(width: 8),
+                          _langBtn(context, provider, '🇷🇺', 'ru'),
+                          const SizedBox(width: 8),
+                          _langBtn(context, provider, '🇺🇸', 'en'),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 32),
                   
@@ -158,46 +169,51 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     // --- SERVER SETTINGS --- (Hidden by default)
                     _sectionHeader(l10n.apiEndpoint, Icons.dns_rounded),
                     const SizedBox(height: 12),
-                    _settingsCard(
-                      child: Column(
-                        children: [
-                          Row(
+                    Selector<AppProvider, (String, String)>(
+                      selector: (_, p) => (p.settings.apiUrl, p.settings.apiKey),
+                      builder: (context, data, child) {
+                        return _settingsCard(
+                          child: Column(
                             children: [
-                              Expanded(
-                                child: _textField(
-                                  label: "API URL",
-                                  initialValue: settings.apiUrl,
-                                  hint: 'https://api.example.com',
-                                  icon: Icons.link_rounded,
-                                  onChanged: (val) => provider.updateSettings(apiUrl: val),
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _textField(
+                                      label: "API URL",
+                                      initialValue: data.$1,
+                                      hint: 'https://api.example.com',
+                                      icon: Icons.link_rounded,
+                                      onChanged: (val) => provider.updateSettings(apiUrl: val),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 22),
+                                    child: _actionBtn(
+                                      label: "Ping",
+                                      icon: Icons.sensors_rounded,
+                                      color: Colors.green,
+                                      onPressed: provider.manualPing,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Padding(
-                                padding: const EdgeInsets.only(top: 22),
-                                child: _actionBtn(
-                                  label: "Ping",
-                                  icon: Icons.sensors_rounded,
-                                  color: Colors.green,
-                                  onPressed: provider.manualPing,
-                                ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                child: Divider(color: Colors.white10, height: 1),
+                              ),
+                              _textField(
+                                label: l10n.apiKey,
+                                initialValue: data.$2,
+                                hint: 'cd8d7cd62ea6...',
+                                icon: Icons.key_rounded,
+                                isPassword: true,
+                                onChanged: (val) => provider.updateSettings(apiKey: val),
                               ),
                             ],
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Divider(color: Colors.white10, height: 1),
-                          ),
-                          _textField(
-                            label: l10n.apiKey,
-                            initialValue: settings.apiKey,
-                            hint: 'cd8d7cd62ea6...',
-                            icon: Icons.key_rounded,
-                            isPassword: true,
-                            onChanged: (val) => provider.updateSettings(apiKey: val),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -205,68 +221,77 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   // --- PRINTER SETTINGS --- (Always visible for printer switching)
                   _sectionHeader(l10n.selectPrinter, Icons.print_rounded),
                   const SizedBox(height: 12),
-                  _settingsCard(
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white10),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: provider.availablePrinters.any((p) => p.name == settings.selectedPrinter) 
-                                  ? settings.selectedPrinter 
-                                  : null,
-                              hint: Text(l10n.choosePrinter, style: const TextStyle(fontSize: 13)),
-                              isExpanded: true,
-                              dropdownColor: const Color(0xFF1E293B),
-                              onChanged: (val) => provider.updateSettings(selectedPrinter: val),
-                              items: provider.availablePrinters.map((p) {
-                                return DropdownMenuItem(
-                                  value: p.name,
-                                  child: Text(p.name, style: const TextStyle(fontSize: 13)),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
+                  Selector<AppProvider, (String?, List<Printer>, Uint8List?)>(
+                    selector: (_, p) => (p.settings.selectedPrinter, p.availablePrinters, p.lastPdfBytes),
+                    builder: (context, data, child) {
+                      final selectedPrinter = data.$1;
+                      final printers = data.$2;
+                      final lastPdfBytes = data.$3;
+                      
+                      return _settingsCard(
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: _actionBtn(
-                                label: l10n.testPrint,
-                                icon: Icons.playlist_add_check_rounded,
-                                color: const Color(0xFF6366F1),
-                                onPressed: provider.testPrint,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.03),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white10),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: printers.any((p) => p.name == selectedPrinter) 
+                                      ? selectedPrinter 
+                                      : null,
+                                  hint: Text(l10n.choosePrinter, style: const TextStyle(fontSize: 13)),
+                                  isExpanded: true,
+                                  dropdownColor: const Color(0xFF1E293B),
+                                  onChanged: (val) => provider.updateSettings(selectedPrinter: val),
+                                  items: printers.map((p) {
+                                    return DropdownMenuItem(
+                                      value: p.name,
+                                      child: Text(p.name, style: const TextStyle(fontSize: 13)),
+                                    );
+                                  }).toList(),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _actionBtn(
-                                label: "JSON",
-                                icon: Icons.code_rounded,
-                                color: Colors.white24,
-                                onPressed: provider.testJsonPrint,
-                              ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _actionBtn(
+                                    label: l10n.testPrint,
+                                    icon: Icons.playlist_add_check_rounded,
+                                    color: const Color(0xFF6366F1),
+                                    onPressed: provider.testPrint,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _actionBtn(
+                                    label: "JSON",
+                                    icon: Icons.code_rounded,
+                                    color: Colors.white24,
+                                    onPressed: provider.testJsonPrint,
+                                  ),
+                                ),
+                              ],
                             ),
+                            if (lastPdfBytes != null) ...[
+                              const SizedBox(height: 8),
+                              _actionBtn(
+                                label: "Ko'rish",
+                                icon: Icons.visibility_rounded,
+                                color: Colors.teal.withValues(alpha: 0.5),
+                                onPressed: () => PdfPreviewDialog.show(context, lastPdfBytes),
+                                isFullWidth: true,
+                              ),
+                            ],
                           ],
                         ),
-                        if (provider.lastPdfBytes != null) ...[
-                          const SizedBox(height: 8),
-                          _actionBtn(
-                            label: "Ko'rish",
-                            icon: Icons.visibility_rounded,
-                            color: Colors.teal.withOpacity(0.5),
-                            onPressed: () => PdfPreviewDialog.show(context, provider.lastPdfBytes!),
-                            isFullWidth: true,
-                          ),
-                        ],
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
@@ -274,52 +299,62 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     // --- APP SETTINGS --- (Hidden by default)
                     _sectionHeader("Ilova sozlamalari", Icons.settings_suggest_rounded),
                     const SizedBox(height: 12),
-                    _settingsCard(
-                      child: Column(
-                        children: [
-                          _settingRow(
-                            label: "${l10n.pollingInterval}: ${settings.pollingInterval}s",
-                            child: SizedBox(
-                              width: 120,
-                              child: SliderTheme(
-                                data: SliderTheme.of(context).copyWith(
-                                  trackHeight: 2,
-                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                                ),
-                                child: Slider(
-                                  value: settings.pollingInterval.toDouble(),
-                                  min: 5,
-                                  max: 60,
-                                  divisions: 11,
-                                  activeColor: const Color(0xFF6366F1),
-                                  onChanged: (val) => provider.updateSettings(pollingInterval: val.toInt()),
+                    Selector<AppProvider, (int, bool)>(
+                      selector: (_, p) => (p.settings.pollingInterval, p.settings.startAtBoot),
+                      builder: (context, data, child) {
+                        return _settingsCard(
+                          child: Column(
+                            children: [
+                              _settingRow(
+                                label: "${l10n.pollingInterval}: ${data.$1}s",
+                                child: SizedBox(
+                                  width: 120,
+                                  child: SliderTheme(
+                                    data: SliderTheme.of(context).copyWith(
+                                      trackHeight: 2,
+                                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                                    ),
+                                    child: Slider(
+                                      value: data.$1.toDouble(),
+                                      min: 5,
+                                      max: 60,
+                                      divisions: 11,
+                                      activeColor: const Color(0xFF6366F1),
+                                      onChanged: (val) => provider.updateSettings(pollingInterval: val.toInt()),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Divider(color: Colors.white10, height: 1),
+                              ),
+                              _settingToggle(
+                                label: l10n.startAtBoot,
+                                value: data.$2,
+                                onChanged: (val) => provider.updateSettings(startAtBoot: val),
+                              ),
+                            ],
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Divider(color: Colors.white10, height: 1),
-                          ),
-                          _settingToggle(
-                            label: l10n.startAtBoot,
-                            value: settings.startAtBoot,
-                            onChanged: (val) => provider.updateSettings(startAtBoot: val),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
                   ],
 
                   // Auto Print Toggle (Always visible)
-                  _settingToggle(
-                    label: l10n.automaticPrinting,
-                    value: settings.autoPrintEnabled,
-                    subtitle: settings.autoPrintEnabled ? l10n.serviceActive : l10n.servicePaused,
-                    onChanged: (val) => provider.updateSettings(autoPrintEnabled: val),
-                    activeColor: const Color(0xFF6366F1),
+                  Selector<AppProvider, bool>(
+                    selector: (_, p) => p.settings.autoPrintEnabled,
+                    builder: (context, enabled, child) {
+                      return _settingToggle(
+                        label: l10n.automaticPrinting,
+                        value: enabled,
+                        subtitle: enabled ? l10n.serviceActive : l10n.servicePaused,
+                        onChanged: (val) => provider.updateSettings(autoPrintEnabled: val),
+                        activeColor: const Color(0xFF6366F1),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 24),
@@ -356,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           // Logs / Main Area
           Expanded(
             child: Container(
-              color: Theme.of(context).colorScheme.background,
+              color: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.all(32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,91 +403,99 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         color: provider.pendingQueue.isNotEmpty ? Colors.amberAccent : Colors.white24, 
                         size: 24),
                       const SizedBox(width: 12),
-                      Text(
-                        "Chop etilmagan vazifalar (${provider.pendingQueue.length})",
-                        style: TextStyle(
-                          fontSize: 20, 
-                          fontWeight: FontWeight.bold, 
-                          color: provider.pendingQueue.isNotEmpty ? Colors.amberAccent : Colors.white24,
+                      Selector<AppProvider, int>(
+                        selector: (_, p) => p.pendingQueue.length,
+                        builder: (context, count, child) => Text(
+                          "Chop etilmagan vazifalar ($count)",
+                          style: TextStyle(
+                            fontSize: 20, 
+                            fontWeight: FontWeight.bold, 
+                            color: count > 0 ? Colors.amberAccent : Colors.white24,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
-                  if (provider.pendingQueue.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.02),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.05)),
-                      ),
-                      child: Center(
-                        child: Text(
-                          "Hozircha kutayotgan vazifalar yo'q",
-                          style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13),
-                        ),
-                      ),
-                    )
-                  else
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        mainAxisExtent: 80,
-                      ),
-                      itemCount: provider.pendingQueue.length,
-                      itemBuilder: (context, index) {
-                        final job = provider.pendingQueue[index];
+                  Selector<AppProvider, List<PrintJob>>(
+                    selector: (_, p) => p.pendingQueue,
+                    builder: (context, pendingQueue, child) {
+                      if (pendingQueue.isEmpty) {
                         return Container(
-                          padding: const EdgeInsets.all(16),
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.amberAccent.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.02),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.amberAccent.withOpacity(0.2)),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      job.documentName,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      "${job.copies} nusxa • ${job.uuid.substring(0, 8)}...",
-                                      style: TextStyle(fontSize: 12, color: Colors.white54),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              _smallActionBtn(
-                                icon: Icons.print_rounded,
-                                color: Colors.greenAccent,
-                                onPressed: () => provider.printQueueItem(job),
-                              ),
-                              const SizedBox(width: 8),
-                              _smallActionBtn(
-                                icon: Icons.close_rounded,
-                                color: Colors.redAccent,
-                                onPressed: () => provider.cancelQueueItem(job),
-                              ),
-                            ],
+                          child: Center(
+                            child: Text(
+                              "Hozircha kutayotgan vazifalar yo'q",
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 13),
+                            ),
                           ),
                         );
-                      },
-                    ),
+                      }
+                      
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          mainAxisExtent: 80,
+                        ),
+                        itemCount: pendingQueue.length,
+                        itemBuilder: (context, index) {
+                          final job = pendingQueue[index];
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.amberAccent.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        job.documentName,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        "${job.copies} nusxa • ${job.uuid.substring(0, 8)}...",
+                                        style: const TextStyle(fontSize: 12, color: Colors.white54),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                _smallActionBtn(
+                                  icon: Icons.print_rounded,
+                                  color: Colors.greenAccent,
+                                  onPressed: () => provider.printQueueItem(job),
+                                ),
+                                const SizedBox(width: 8),
+                                _smallActionBtn(
+                                  icon: Icons.close_rounded,
+                                  color: Colors.redAccent,
+                                  onPressed: () => provider.cancelQueueItem(job),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                   
                   const SizedBox(height: 32),
                   const Divider(color: Colors.white10),
@@ -479,64 +522,74 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       decoration: BoxDecoration(
                         color: const Color(0xFF0F172A),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                       ),
-                      child: provider.logs.isEmpty
-                          ? Center(
+                      child: RepaintBoundary(
+                        child: Selector<AppProvider, List<String>>(
+                          selector: (_, p) => p.logs,
+                          shouldRebuild: (prev, next) => prev.length != next.length || (next.isNotEmpty && prev.first != next.first),
+                          builder: (context, logs, child) {
+                          if (logs.isEmpty) {
+                            return Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.history_rounded, size: 64, color: Colors.white.withOpacity(0.1)),
+                                  Icon(Icons.history_rounded, size: 64, color: Colors.white.withValues(alpha: 0.1)),
                                   const SizedBox(height: 16),
                                   Text(
                                     l10n.noActivity,
-                                    style: TextStyle(color: Colors.white.withOpacity(0.2)),
+                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
                                   ),
                                 ],
                               ),
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: provider.logs.length,
-                              separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.white10),
-                              itemBuilder: (context, index) {
-                                final log = provider.logs[index];
-                                final isError = log.contains('Error') || log.contains('Xatolik') || log.contains('Exception') || log.contains('failed');
-                                final isSuccess = log.contains('muvaffaqiyatli') || log.contains('chop etildi');
-                                final isWebSocket = log.contains('WebSocket');
+                            );
+                          }
+                          
+                          return ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: logs.length,
+                            separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.white10),
+                            itemBuilder: (context, index) {
+                              final log = logs[index];
+                              final isError = log.contains('Error') || log.contains('Xatolik') || log.contains('Exception') || log.contains('failed');
+                              final isSuccess = log.contains('muvaffaqiyatli') || log.contains('chop etildi');
+                              final isWebSocket = log.contains('WebSocket');
 
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "> ",
-                                        style: TextStyle(color: Colors.white.withOpacity(0.3), fontFamily: 'monospace', fontSize: 13),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          log,
-                                          style: TextStyle(
-                                            fontFamily: 'monospace',
-                                            color: isError 
-                                                ? Colors.redAccent.withOpacity(0.9) 
-                                                : isSuccess 
-                                                    ? Colors.greenAccent.withOpacity(0.8)
-                                                    : isWebSocket
-                                                        ? Colors.blueAccent.withOpacity(0.8)
-                                                        : Colors.white70,
-                                            fontSize: 13,
-                                            height: 1.4,
-                                          ),
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "> ",
+                                      style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontFamily: 'monospace', fontSize: 13),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        log,
+                                        style: TextStyle(
+                                          fontFamily: 'monospace',
+                                          color: isError 
+                                              ? Colors.redAccent.withValues(alpha: 0.9) 
+                                              : isSuccess 
+                                                  ? Colors.greenAccent.withValues(alpha: 0.8)
+                                                  : isWebSocket
+                                                      ? Colors.blueAccent.withValues(alpha: 0.8)
+                                                      : Colors.white70,
+                                          fontSize: 13,
+                                          height: 1.4,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
+                  ),
                   ),
                 ],
               ),
@@ -569,7 +622,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: Colors.white.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white10),
       ),
@@ -599,11 +652,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           decoration: InputDecoration(
             isDense: true,
             hintText: hint,
-            prefixIcon: Icon(icon, size: 18, color: const Color(0xFF6366F1).withOpacity(0.7)),
+            prefixIcon: Icon(icon, size: 18, color: const Color(0xFF6366F1).withValues(alpha: 0.7)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.04),
+            fillColor: Colors.white.withValues(alpha: 0.04),
           ),
         ),
       ],
@@ -644,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           child: Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: activeColor ?? const Color(0xFF6366F1),
+            activeThumbColor: activeColor ?? const Color(0xFF6366F1),
           ),
         ),
       ],
@@ -654,7 +707,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _smallActionBtn({required IconData icon, required Color color, required VoidCallback onPressed}) {
     return Container(
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: IconButton(
@@ -683,10 +736,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         label: Text(label, style: const TextStyle(fontSize: 12)),
         style: TextButton.styleFrom(
           foregroundColor: color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-          backgroundColor: color.withOpacity(0.1),
+          backgroundColor: color.withValues(alpha: 0.1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: color.withOpacity(0.3)),
+            side: BorderSide(color: color.withValues(alpha: 0.3)),
           ),
         ),
       ),
@@ -697,9 +750,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.05),
+        color: Colors.amber.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.withOpacity(0.2)),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -737,9 +790,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF6366F1).withOpacity(0.15) : Colors.transparent,
+          color: active ? const Color(0xFF6366F1).withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: active ? const Color(0xFF6366F1).withOpacity(0.5) : Colors.white10),
+          border: Border.all(color: active ? const Color(0xFF6366F1).withValues(alpha: 0.5) : Colors.white10),
         ),
         child: Text(flag, style: const TextStyle(fontSize: 18)),
       ),

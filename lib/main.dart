@@ -126,7 +126,6 @@ class AutoPrintApp extends StatelessWidget {
           seedColor: const Color(0xFF6366F1), // Indigo
           brightness: Brightness.dark,
           surface: const Color(0xFF0F172A), // Slate 900
-          background: const Color(0xFF020617), // Slate 950
         ),
         cardTheme: CardThemeData(
           color: const Color(0xFF1E293B), // Slate 800
@@ -150,10 +149,10 @@ class AutoPrintApp extends StatelessWidget {
           ),
         ),
         scrollbarTheme: ScrollbarThemeData(
-          thumbColor: MaterialStateProperty.all(const Color(0xFF6366F1).withOpacity(0.2)),
+          thumbColor: WidgetStateProperty.all(const Color(0xFF6366F1).withValues(alpha: 0.2)),
           radius: const Radius.circular(8),
-          thickness: MaterialStateProperty.all(6),
-          thumbVisibility: MaterialStateProperty.all(true),
+          thickness: WidgetStateProperty.all(6),
+          thumbVisibility: WidgetStateProperty.all(true),
         ),
       ),
       home: const HomeScreen(),

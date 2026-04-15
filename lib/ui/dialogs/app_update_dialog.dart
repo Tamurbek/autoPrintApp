@@ -25,7 +25,7 @@ class AppUpdateDialog extends StatefulWidget {
       context: context,
       barrierDismissible: !isMandatory,
       barrierLabel: '',
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (context, anim1, anim2) => AppUpdateDialog(
         version: version,
@@ -165,10 +165,10 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
           decoration: BoxDecoration(
             color: const Color(0xFF0F172A),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 blurRadius: 50,
                 spreadRadius: -10,
                 offset: const Offset(0, 20),
@@ -184,7 +184,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [primaryColor.withOpacity(0.8), primaryColor],
+                    colors: [primaryColor.withValues(alpha: 0.8), primaryColor],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -211,7 +211,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: primaryColor.withOpacity(0.1),
+                            color: primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -231,9 +231,9 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                         ),
                         child: SingleChildScrollView(
                           child: Text(
@@ -322,7 +322,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
           child: LinearProgressIndicator(
             value: isInstalling ? null : downloadProgress,
             minHeight: 10,
-            backgroundColor: Colors.white.withOpacity(0.05),
+            backgroundColor: Colors.white.withValues(alpha: 0.05),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),

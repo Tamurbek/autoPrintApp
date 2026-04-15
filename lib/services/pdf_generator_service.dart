@@ -1,4 +1,5 @@
 
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
@@ -81,27 +82,23 @@ class PdfGeneratorService {
     }
 
     // 3. Header va keys ni aniqlash
+    // Ensure all items are Map
+    for (int i = 0; i < items.length; i++) {
+      if (items[i] is String) {
+        try {
+          items[i] = jsonDecode(items[i]);
+        } catch (_) {}
+      }
+    }
+
     List<dynamic> headers;
     List<dynamic> keys;
 
     if (data['headers'] is List && data['keys'] is List) {
       headers = data['headers'] as List<dynamic>;
       keys = data['keys'] as List<dynamic>;
-    } else if (items.isNotEmpty && items.first is Map) {
-      final firstItem = items.first as Map;
-      keys = firstItem.keys.toList();
-      headers = keys.map((k) {
-        final s = k.toString().replaceAll('_', ' ');
-        return s[0].toUpperCase() + s.substring(1);
-      }).toList();
-
-      // # raqam ustunini boshiga qo'shish (agar yo'q bo'lsa)
-      if (!keys.contains('#') && !keys.contains('id') && !keys.contains('index')) {
-        keys = ['#', ...keys];
-        headers = ['#', ...headers];
-      }
     } else {
-      // Eng so'nggi fallback
+      // Standart ustunlar va kalitlarni ishlatamiz
       headers = ['#', 'Talaba F.I.Sh.', 'Fan nomi', 'Guruh', 'Baho'];
       keys = ['#', 'fullname', 'subject_name', 'group_name', 'grade'];
     }
@@ -192,38 +189,44 @@ class PdfGeneratorService {
                 ...items.asMap().entries.map((entry) {
                   final int index = entry.key;
                   final dynamic item = entry.value;
-                  return pw.TableRow(
-                    children: keys.map((k) {
-                      String val = "";
-                      final keyStr = k.toString();
-                      if (keyStr == '#' || keyStr == 'id') {
-                        val = (index + 1).toString();
-                      } else if (item is Map) {
-                        // To'g'ridan-to'g'ri kalit bilan izlash
-                        if (item.containsKey(keyStr)) {
-                          val = item[keyStr]?.toString() ?? "";
-                        } else {
-                          // Kalit nomlarini moslash (professional nomlar -> technical keys)
-                          final lk = keyStr.toLowerCase();
-                          if (lk == 'fullname' || lk == 'talaba' || lk == 'f.i.sh.' || lk == 'fish') {
-                             val = _str(item, ['fish', 'fullname', 'name', 'talaba', 'fullname_uz']) ?? "";
-                          } else if (lk == 'subject' || lk == 'subject_name' || lk == 'fan' || lk == 'fan nomi') {
-                             val = _str(item, ['subject', 'subject_name', 'fan', 'fan_nomi']) ?? "";
-                          } else if (lk == 'group' || lk == 'group_name' || lk == 'guruh') {
-                             val = _str(item, ['guruh', 'group', 'group_name', 'guruh_nomi']) ?? "";
-                          } else if (lk == 'grade' || lk == 'baho' || lk == 'ball') {
-                             val = _str(item, ['grade', 'baho', 'ball', 'mark']) ?? "";
-                          } else {
-                             // Hech biri bo'lmasa — kichik harfda qidirish
-                             for (final itemKey in item.keys) {
-                               if (itemKey.toString().toLowerCase() == lk) {
-                                 val = item[itemKey]?.toString() ?? "";
-                                 break;
-                               }
-                             }
+                  
+                  // Pre-calculate cells for this row
+                  final List<String> rowCells = keys.map((k) {
+                    String val = "";
+                    final keyStr = k.toString().trim();
+                    if (keyStr == '#' || keyStr == 'id' || keyStr == 'index') {
+                      val = (index + 1).toString();
+                    } else if (item is Map) {
+                      final lk = keyStr.toLowerCase();
+                      
+                      if (item.containsKey(keyStr) && item[keyStr] != null && item[keyStr].toString().isNotEmpty) {
+                        val = item[keyStr].toString();
+                      } else if (lk.contains('fullname') || lk.contains('talaba') || lk.contains('f.i.sh') || lk.contains('fish') || lk.contains('ism')) {
+                        val = _str(item, ['fish', 'fullname', 'name', 'talaba', 'fullname_uz', 'talaba f.i.sh.']) ?? "";
+                      } else if (lk.contains('subject') || lk.contains('fan')) {
+                        val = _str(item, ['subject', 'subject_name', 'fan', 'fan_nomi', 'fan nomi']) ?? "";
+                      } else if (lk.contains('group') || lk.contains('guruh')) {
+                        val = _str(item, ['guruh', 'group', 'group_name', 'guruh_nomi']) ?? "";
+                      } else if (lk.contains('grade') || lk.contains('baho') || lk.contains('ball')) {
+                        val = _str(item, ['grade', 'baho', 'ball', 'mark', 'olgan_bahosi']) ?? "";
+                      } else {
+                        for (final itemKey in item.keys) {
+                          if (itemKey.toString().toLowerCase() == lk) {
+                            val = item[itemKey]?.toString() ?? "";
+                            break;
                           }
                         }
                       }
+                    }
+                    return val;
+                  }).toList();
+
+                  return pw.TableRow(
+                    children: rowCells.asMap().entries.map((cellEntry) {
+                      final i = cellEntry.key;
+                      final val = cellEntry.value;
+                      final keyStr = keys[i].toString();
+                      
                       return pw.Padding(
                         padding: const pw.EdgeInsets.all(6),
                         child: pw.Text(val,
