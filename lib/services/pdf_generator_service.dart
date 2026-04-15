@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 
 class PdfGeneratorResponse {
   final Uint8List bytes;
@@ -131,6 +132,21 @@ class PdfGeneratorService {
 
     debugPrint('=== title: $title, items count: ${items.length} ===');
 
+    String _clean(String s) {
+      if (s.isEmpty) return s;
+      return s
+          .replaceAll("o'", "oʻ")
+          .replaceAll("g'", "gʻ")
+          .replaceAll("O'", "Oʻ")
+          .replaceAll("G'", "Gʻ")
+          .replaceAll("o`", "oʻ")
+          .replaceAll("g`", "gʻ")
+          .replaceAll("O`", "Oʻ")
+          .replaceAll("G`", "Gʻ")
+          .replaceAll("'", "’") // standard quote to curly quote
+          .replaceAll("`", "ʻ"); // backtick to curly apostrophe
+    }
+
 
     // 5. Ustun kengliklarini hisoblash
     final int colCount = headers.length;
@@ -144,8 +160,17 @@ class PdfGeneratorService {
       }
     }
 
+    // Load Unicode font
+    final font = await PdfGoogleFonts.robotoRegular();
+    final boldFont = await PdfGoogleFonts.robotoBold();
+    final theme = pw.ThemeData.withFont(
+      base: font,
+      bold: boldFont,
+    );
+
     pdf.addPage(
       pw.MultiPage(
+        theme: theme,
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 40),
         build: (pw.Context context) {
@@ -153,14 +178,14 @@ class PdfGeneratorService {
             pw.Center(
               child: pw.Column(
                 children: [
-                  pw.Text(title,
+                  pw.Text(_clean(title),
                       style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18)),
                   pw.SizedBox(height: 6),
                   if (subtitle.isNotEmpty)
-                    pw.Text(subtitle,
+                    pw.Text(_clean(subtitle),
                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                   pw.SizedBox(height: 4),
-                  pw.Text(infoLine,
+                  pw.Text(_clean(infoLine),
                       style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
                 ],
               ),
@@ -178,7 +203,7 @@ class PdfGeneratorService {
                   children: headers
                       .map((h) => pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
-                            child: pw.Text(h.toString(),
+                            child: pw.Text(_clean(h.toString()),
                                 style: pw.TextStyle(
                                     fontWeight: pw.FontWeight.bold, fontSize: 9),
                                 textAlign: pw.TextAlign.center),
@@ -229,7 +254,7 @@ class PdfGeneratorService {
                       
                       return pw.Padding(
                         padding: const pw.EdgeInsets.all(6),
-                        child: pw.Text(val,
+                        child: pw.Text(_clean(val),
                             style: const pw.TextStyle(fontSize: 9),
                             textAlign: (keyStr == 'grade' ||
                                     keyStr == 'id' ||
@@ -258,7 +283,7 @@ class PdfGeneratorService {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text(footerText,
+                      pw.Text(_clean(footerText),
                           style: pw.TextStyle(
                               fontWeight: pw.FontWeight.bold, fontSize: 10)),
                       pw.SizedBox(height: 15),
@@ -287,7 +312,7 @@ class PdfGeneratorService {
                               fontWeight: pw.FontWeight.bold, fontSize: 10)),
                       pw.SizedBox(height: 15),
                       if (teacher.isNotEmpty)
-                        pw.Text(teacher.toUpperCase(),
+                        pw.Text(_clean(teacher.toUpperCase()),
                             style: pw.TextStyle(
                                 fontWeight: pw.FontWeight.bold, fontSize: 12)),
                     ],
