@@ -91,11 +91,11 @@ class PrintService {
                     throw Exception("Windows/Linux tizimlarida HTML-dan chop etish qo'llab-quvvatlanmaydi. Iltimos, serverda 'json' yoki 'pdf' turidan foydalaning.");
                   }
                   printData = await Printing.convertHtml(
-                    html: job.html,
+                    html: job.html ?? '',
                     format: PdfPageFormat.a4,
                   );
                 } else if (job.type == 'json') {
-                  final dynamic decoded = jsonDecode(job.html);
+                  final dynamic decoded = jsonDecode(job.html ?? '{}');
                   Map<String, dynamic> jsonData;
                   if (decoded is List) {
                     jsonData = {'items': decoded};
@@ -106,7 +106,12 @@ class PrintService {
                   printData = genResponse.bytes;
                   pageCount = genResponse.pageCount;
                 } else if (job.type == 'pdf') {
-                  printData = base64Decode(job.html);
+                  final base64String = job.base64Data ?? job.html ?? '';
+                  if (base64String.isNotEmpty) {
+                    printData = base64Decode(base64String);
+                  } else {
+                    throw Exception("PDF ma'lumotlari topilmadi.");
+                  }
                 }
 
                 if (printData != null) {

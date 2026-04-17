@@ -4,9 +4,10 @@ import 'dart:typed_data';
 class PrintJob {
   final String uuid;
   final String printerId;
-  final String subjectId;
+  final String? subjectId;
   final String type;
-  final String html;
+  final String? html;
+  final String? base64Data;
   final String documentName;
   final int copies;
   final String status;
@@ -18,9 +19,10 @@ class PrintJob {
   PrintJob({
     required this.uuid,
     required this.printerId,
-    required this.subjectId,
+    this.subjectId,
     required this.type,
-    required this.html,
+    this.html,
+    this.base64Data,
     required this.documentName,
     this.copies = 1,
     required this.status,
@@ -28,16 +30,17 @@ class PrintJob {
   });
 
   factory PrintJob.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] as Map<String, dynamic>;
+    final data = json['data'] as Map<String, dynamic>? ?? {};
     return PrintJob(
-      uuid: json['uuid'],
-      printerId: json['printer_id'],
+      uuid: json['uuid'] ?? '',
+      printerId: json['printer_id'] ?? '',
       subjectId: json['subject_id'],
-      type: data['type'],
+      type: data['type'] ?? '',
       html: data['html'],
-      documentName: data['document_name'],
+      base64Data: data['base64_data'],
+      documentName: data['document_name'] ?? 'Hujjat',
       copies: data['copies'] ?? 1,
-      status: json['status'],
+      status: json['status'] ?? 'pending',
       createdAt: json['created_at'],
     );
   }
